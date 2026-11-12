@@ -52,7 +52,7 @@ jobs:
         working-directory: ${{ runner.temp }}
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y xvfb xterm openbox unzip
+          sudo apt-get install -y xvfb xterm openbox unzip dbus-x11
           curl -fsSL -o rustdesk.deb "https://github.com/rustdesk/rustdesk/releases/download/${RUSTDESK_VERSION}/rustdesk-${RUSTDESK_VERSION}-x86_64.deb"
           sudo apt-get install -y ./rustdesk.deb
           curl -fsSL -o server.zip "https://github.com/rustdesk/rustdesk-server/releases/download/${SERVER_VERSION}/rustdesk-server-linux-amd64.zip"
@@ -97,15 +97,22 @@ jobs:
           Xvfb :99 -screen 0 1280x800x24 > xvfb.log 2>&1 &
           sleep 1
           export DISPLAY=:99
+          eval "$(dbus-launch --sh-syntax)"
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
           openbox > openbox.log 2>&1 &
           xterm -geometry 160x50+0+0 -fa Monospace -fs 11 -bg '#1e293b' -fg '#e2e8f0' > xterm.log 2>&1 &
           XDG_SESSION_TYPE=x11 nohup rustdesk --server > peer.log 2>&1 &
-          for i in $(seq 1 60); do
+          for i in $(seq 1 120); do
             ID=$(grep -o 'update_pk [0-9]*' srv/hbbs.log | tail -1 | awk '{print $2}')
             [ -n "$ID" ] && break
             sleep 1
           done
-          if [ -z "$ID" ]; then echo "peer never registered"; tail -50 peer.log srv/hbbs.log; exit 1; fi
+          if [ -z "$ID" ]; then
+            echo "peer never registered"; ps -ef | grep -i [r]ustdesk
+            tail -n 50 peer.log srv/hbbs.log
+            find ~/.local/share/logs -type f -exec tail -n 80 {} \; 2>/dev/null
+            exit 1
+          fi
           echo "Peer registered as $ID"
           echo "ID=$ID" >> "$GITHUB_ENV"
 
