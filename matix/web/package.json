@@ -1,0 +1,28 @@
+{
+  "name": "matix-kg-web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "proto": "node scripts/gen-proto.mjs",
+    "dev": "npm run proto && vite",
+    "build": "npm run proto && tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "smoke": "npm run proto && tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.6.1",
+    "fzstd": "0.1.1",
+    "libsodium-wrappers": "0.7.15",
+    "protobufjs": "7.4.0"
+  },
+  "devDependencies": {
+    "@types/libsodium-wrappers": "0.7.14",
+    "@types/node": "22.10.2",
+    "protobufjs-cli": "1.1.3",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2",
+    "vite": "6.0.5"
+  }
+}

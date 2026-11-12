@@ -1,0 +1,144 @@
+name: Matix KG web client e2e
+
+# Builds the Matix KG web client and runs it against a real, unmodified RustDesk peer on a
+# virtual X display, through our own hbbs/hbbr: protocol smoke test, file transfer, and a
+# headless-Chromium check that video decodes and keyboard/mouse input reaches the peer.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "matix/**"
+      - ".github/workflows/matix-web-e2e.yml"
+  push:
+    branches: [master]
+    paths:
+      - "matix/**"
+      - ".github/workflows/matix-web-e2e.yml"
+
+permissions:
+  contents: read
+
+env:
+  RUSTDESK_VERSION: "1.5.3"
+  SERVER_VERSION: "1.1.16"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: matix/web
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: matix/web/package-lock.json
+
+      - name: Install and build the web client
+        run: |
+          npm ci
+          npm run build
+          npm i --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Install peer (RustDesk ${{ env.RUSTDESK_VERSION }}) and servers
+        working-directory: ${{ runner.temp }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y xvfb xterm openbox unzip
+          curl -fsSL -o rustdesk.deb "https://github.com/rustdesk/rustdesk/releases/download/${RUSTDESK_VERSION}/rustdesk-${RUSTDESK_VERSION}-x86_64.deb"
+          sudo apt-get install -y ./rustdesk.deb
+          curl -fsSL -o server.zip "https://github.com/rustdesk/rustdesk-server/releases/download/${SERVER_VERSION}/rustdesk-server-linux-amd64.zip"
+          unzip -o -q server.zip
+          ls -R | head -20
+
+      - name: Start hbbs/hbbr, a virtual display and the peer
+        working-directory: ${{ runner.temp }}
+        run: |
+          IP=$(hostname -I | awk '{print $1}')
+          echo "IP=$IP" >> "$GITHUB_ENV"
+          BIN=$(dirname "$(find . -name hbbs -type f | head -1)")
+          mkdir -p srv && cd srv
+          # Bind to the runner IP, not loopback: hbbr treats loopback TCP as its admin console.
+          nohup "../$BIN/hbbr" -b "$IP" -k _ > hbbr.log 2>&1 &
+          sleep 1
+          nohup "../$BIN/hbbs" -b "$IP" -r "$IP:21117" -k _ > hbbs.log 2>&1 &
+          for i in $(seq 1 20); do [ -s id_ed25519.pub ] && break; sleep 0.5; done
+          KEY=$(cat id_ed25519.pub)
+          echo "KEY=$KEY" >> "$GITHUB_ENV"
+          cd ..
+          PASSWORD="e2e-$(openssl rand -hex 8)"
+          echo "::add-mask::$PASSWORD"
+          echo "PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
+          mkdir -p ~/.config/rustdesk
+          cat > ~/.config/rustdesk/RustDesk2.toml <<EOF
+          rendezvous_server = '$IP:21116'
+          nat_type = 1
+          serial = 0
+
+          [options]
+          custom-rendezvous-server = '$IP'
+          relay-server = '$IP'
+          key = '$KEY'
+          approve-mode = 'password'
+          verification-method = 'use-permanent-password'
+          enable-lan-discovery = 'N'
+          EOF
+          printf "password = '%s'\n" "$PASSWORD" > ~/.config/rustdesk/RustDesk.toml
+          Xvfb :99 -screen 0 1280x800x24 > xvfb.log 2>&1 &
+          sleep 1
+          export DISPLAY=:99
+          openbox > openbox.log 2>&1 &
+          xterm -geometry 160x50+0+0 -fa Monospace -fs 11 -bg '#1e293b' -fg '#e2e8f0' > xterm.log 2>&1 &
+          XDG_SESSION_TYPE=x11 nohup rustdesk --server > peer.log 2>&1 &
+          for i in $(seq 1 60); do
+            ID=$(grep -o 'update_pk [0-9]*' srv/hbbs.log | tail -1 | awk '{print $2}')
+            [ -n "$ID" ] && break
+            sleep 1
+          done
+          if [ -z "$ID" ]; then echo "peer never registered"; tail -50 peer.log srv/hbbs.log; exit 1; fi
+          echo "Peer registered as $ID"
+          echo "ID=$ID" >> "$GITHUB_ENV"
+
+      - name: Protocol smoke test (Node)
+        env:
+          ID_SERVER: ws://${{ env.IP }}:21118
+          RELAY_SERVER: ws://${{ env.IP }}:21119
+          WAIT_MS: "6000"
+        run: npx tsx scripts/smoke.ts
+
+      - name: File transfer test (Node)
+        env:
+          ID_SERVER: ws://${{ env.IP }}:21118
+          RELAY_SERVER: ws://${{ env.IP }}:21119
+          REMOTE_DIR: /tmp
+        run: npx tsx scripts/files-smoke.ts
+
+      - name: Browser test (headless Chromium)
+        run: |
+          npx vite preview --port 4173 --strictPort --host 127.0.0.1 > preview.log 2>&1 &
+          sleep 2
+          KEY_Q=$(node -e 'console.log(encodeURIComponent(process.env.KEY))')
+          URL="http://127.0.0.1:4173/?idServer=ws://$IP:21118&relayServer=ws://$IP:21119&key=$KEY_Q" SHOT_DIR="$RUNNER_TEMP" node scripts/browser-e2e.mjs
+
+      - name: Logs
+        if: always()
+        working-directory: ${{ runner.temp }}
+        run: |
+          tail -40 srv/hbbs.log srv/hbbr.log || true
+          tail -80 peer.log || true
+          find ~/.local/share/logs/RustDesk -name '*.log' -exec tail -60 {} \; 2>/dev/null || true
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: ${{ runner.temp }}/e2e-*.png
+          if-no-files-found: ignore
