@@ -1,6 +1,6 @@
-name: Matix KG web client e2e
+name: MatixBridge web client e2e
 
-# Builds the Matix KG web client and runs it against a real, unmodified RustDesk peer on a
+# Builds the MatixBridge web client and runs it against a real, unmodified RustDesk peer on a
 # virtual X display, through our own hbbs/hbbr: protocol smoke test, file transfer, and a
 # headless-Chromium check that video decodes and keyboard/mouse input reaches the peer.
 

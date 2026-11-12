@@ -14,7 +14,7 @@ const env = (k: string, d?: string) => {
 const session = new Session(
   env("ID"),
   { idServer: env("ID_SERVER", "ws://127.0.0.1:21118"), relayServer: env("RELAY_SERVER", "ws://127.0.0.1:21119"), key: env("KEY") },
-  { agentName: "Matix KG smoke test" }
+  { agentName: "MatixBridge smoke test" }
 );
 
 let frames = 0;

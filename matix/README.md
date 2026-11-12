@@ -1,4 +1,8 @@
-# Matix KG
+# MatixBridge
+
+> The tool was first called "Matix KG". Infrastructure that is already deployed keeps that name:
+> `kg.matix.one`, the cPanel account `kgmatix`, the systemd units `matix-kg-hbbs`/`matix-kg-hbbr`,
+> `/var/lib/matix-kg`, the repository variables `MATIX_KG_*` and the `matix-kg` build input.
 
 Remote support for Matix: a support agent controls a customer's PC from the browser.
 It is built on RustDesk (AGPL-3.0). The fork adds three things and leaves upstream code alone:
@@ -12,11 +16,11 @@ It is built on RustDesk (AGPL-3.0). The fork adds three things and leaves upstre
 ```
 agent's browser ──wss──► kg.matix.one (Cloudflare ► nginx/Apache) ──► hbbs :21118 / hbbr :21119
                                                                           ▲            ▲
-customer's Matix KG app ──tcp/udp 21115-21117──► kg-id.matix.one (DNS only) ┘            │
+customer's MatixBridge app ──tcp/udp 21115-21117──► kg-id.matix.one (DNS only) ┘            │
                         └──────────────── relayed session (always, for web) ─────────────┘
 ```
 
-A browser can only be the controlling side. Customers run the Matix KG app; agents use
+A browser can only be the controlling side. Customers run the MatixBridge app; agents use
 `https://kg.matix.one/web/`, or the app itself.
 
 ## Web client (`matix/web`)
@@ -94,17 +98,17 @@ TCP connections from loopback as its admin console, so a local peer's relay conn
 
 `matix/brand/apply.sh` makes the build use our server:
 
-- It sets `RENDEZVOUS_SERVERS`, `RS_PUB_KEY` and `APP_NAME=MatixKG` in `libs/hbb_common`.
+- It sets `RENDEZVOUS_SERVERS`, `RS_PUB_KEY` and `APP_NAME=MatixBridge` in `libs/hbb_common`.
 - It sets the Windows, Android and iOS product names.
 - It copies the icons from `matix/brand/assets`, which `gen_assets.py` renders.
 
 To build:
 
 1. Set the repository variables `MATIX_KG_HOST` (e.g. `kg-id.matix.one`) and `MATIX_KG_KEY`.
-2. Run **Actions › Matix KG native apps**.
+2. Run **Actions › MatixBridge native apps**.
 
 That workflow calls RustDesk's own `flutter-build.yml` with `matix-kg: true`. This applies the
-branding and skips the Linux and Sciter jobs. The workflow then renames the release files to `MatixKG-*`.
+branding and skips the Linux and Sciter jobs. The workflow then renames the release files to `MatixBridge-*`.
 
 **Signing:**
 

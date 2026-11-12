@@ -1,4 +1,4 @@
-// Matix KG web client: agent-side remote control in the browser.
+// MatixBridge web client: agent-side remote control in the browser.
 import { hbb as M } from "./proto/message.js";
 import { Session, SessionError, type ServerConfig } from "./core/session";
 import { FileSession, type RemoteDir, type RemoteEntry } from "./core/files";
@@ -56,14 +56,14 @@ function toast(text: string, err = false, ms = 4000) {
 const store = {
   get(k: string) {
     try {
-      return localStorage.getItem("matixkg." + k) || "";
+      return localStorage.getItem("matixbridge." + k) || "";
     } catch {
       return "";
     }
   },
   set(k: string, v: string) {
     try {
-      localStorage.setItem("matixkg." + k, v);
+      localStorage.setItem("matixbridge." + k, v);
     } catch {
       /* private mode */
     }
@@ -136,12 +136,12 @@ function connectScreen(cfg: ServerConfig, error = "") {
   const form = h(
     "form",
     { class: "card" },
-    h("div", { class: "brand" }, h("img", { src: "./favicon.svg", alt: "" }), h("div", {}, h("h1", {}, "Matix KG"), h("p", {}, "Remote support"))),
-    h("label", { for: "peer-id" }, "Customer's Matix KG ID"),
+    h("div", { class: "brand" }, h("img", { src: "./favicon.svg", alt: "" }), h("div", {}, h("h1", {}, "MatixBridge"), h("p", {}, "Remote support"))),
+    h("label", { for: "peer-id" }, "Customer's MatixBridge ID"),
     id,
     h("label", { for: "peer-pw" }, "Password"),
     pw,
-    h("div", { class: "hint" }, "Ask the customer to read you the ID shown in their Matix KG app. Without a password, they will be asked to accept the connection."),
+    h("div", { class: "hint" }, "Ask the customer to read you the ID shown in their MatixBridge app. Without a password, they will be asked to accept the connection."),
     h("label", { for: "agent" }, "Shown to the customer as"),
     agent,
     go,
@@ -167,7 +167,7 @@ function connectScreen(cfg: ServerConfig, error = "") {
     if (filesOnly) void filesScreen(cfg, peer, pw.value, agent.value.trim() || "Matix Support");
     else void sessionScreen(cfg, peer, pw.value, agent.value.trim() || "Matix Support");
   };
-  app.append(h("div", { class: "connect" }, form, h("div", { class: "footer" }, "Matix KG · based on RustDesk (AGPL-3.0)")));
+  app.append(h("div", { class: "connect" }, form, h("div", { class: "footer" }, "MatixBridge · based on RustDesk (AGPL-3.0)")));
   if (!webCodecsAvailable()) err.textContent = "This browser cannot show remote screens (no WebCodecs). Use Chrome, Edge or Safari 16.4+.";
   id.focus();
 }
@@ -441,7 +441,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
       session.send({ misc: { client_record_status: false } });
       const ext = (recorder?.mimeType || "").includes("mp4") ? "mp4" : "webm";
       const stamp = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 19);
-      if (recChunks.length) saveBlob(new Blob(recChunks, { type: recorder?.mimeType }), `MatixKG-${peerId}-${stamp}.${ext}`);
+      if (recChunks.length) saveBlob(new Blob(recChunks, { type: recorder?.mimeType }), `MatixBridge-${peerId}-${stamp}.${ext}`);
       recChunks = [];
     };
     recorder.start(1000);
@@ -738,5 +738,5 @@ async function filesScreen(cfg: ServerConfig, peerId: string, password: string, 
 loadConfig()
   .then((cfg) => connectScreen(cfg))
   .catch((e) => {
-    app.replaceChildren(h("div", { class: "connect" }, h("div", { class: "card" }, h("h2", {}, "Matix KG"), h("p", { class: "error" }, String(e instanceof Error ? e.message : e)))));
+    app.replaceChildren(h("div", { class: "connect" }, h("div", { class: "card" }, h("h2", {}, "MatixBridge"), h("p", { class: "error" }, String(e instanceof Error ? e.message : e)))));
   });

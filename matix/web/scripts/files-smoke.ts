@@ -2,14 +2,14 @@
 import { FileSession } from "../src/core/files";
 
 const e = process.env;
-const fs = new FileSession(e.ID!, { idServer: e.ID_SERVER!, relayServer: e.RELAY_SERVER!, key: e.KEY! }, "Matix KG file smoke");
+const fs = new FileSession(e.ID!, { idServer: e.ID_SERVER!, relayServer: e.RELAY_SERVER!, key: e.KEY! }, "MatixBridge file smoke");
 try {
   await fs.connect(e.PASSWORD);
   const home = await fs.readDir("");
   console.log(`home: ${home.path} (${home.entries.length} entries)`);
   const dir = e.REMOTE_DIR || home.path;
   const payload = new Uint8Array(400 * 1024 + 123).map((_, i) => (i * 31) & 0xff);
-  const name = `matix-kg-smoke-${Date.now()}.bin`;
+  const name = `matixbridge-smoke-${Date.now()}.bin`;
   await fs.upload(dir, [new File([payload], name, { lastModified: Date.now() })], (p) => p.done === p.total && console.log(`uploaded ${p.done} bytes`));
   await new Promise((r) => setTimeout(r, 800));
   const after = await fs.readDir(dir);
