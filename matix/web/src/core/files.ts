@@ -50,6 +50,8 @@ export class FileSession {
   readonly session: Session;
   private dirWaiters: { resolve: (d: RemoteDir) => void; reject: (e: Error) => void }[] = [];
   private jobs = new Map<number, DownloadJob | UploadJob>();
+  /** A listing the peer sent before anyone asked (it lists the start folder after login). */
+  private unsolicited: RemoteDir | undefined;
   separator = "/";
 
   constructor(peerId: string, server: ServerConfig, agentName: string) {
@@ -81,6 +83,11 @@ export class FileSession {
 
   /** Lists a remote directory ("" means the remote user's home). */
   readDir(path: string, includeHidden = false): Promise<RemoteDir> {
+    const early = this.unsolicited;
+    if (early && (path === "" || path === early.path)) {
+      this.unsolicited = undefined;
+      return Promise.resolve(early);
+    }
     return new Promise((resolve, reject) => {
       const waiter = {
         resolve: (d: RemoteDir) => {
@@ -179,7 +186,9 @@ export class FileSession {
           hidden: !!e.is_hidden,
         })),
       };
-      this.dirWaiters.shift()?.resolve(dir);
+      const waiter = this.dirWaiters.shift();
+      if (waiter) waiter.resolve(dir);
+      else this.unsolicited = dir;
       return;
     }
     if (r.digest) {
