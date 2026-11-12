@@ -1,5 +1,5 @@
 {
-  "idServer": "wss://kg.matix.one/ws/id",
-  "relayServer": "wss://kg.matix.one/ws/relay",
+  "idServer": "wss://bridge.matix.one/ws/id",
+  "relayServer": "wss://bridge.matix.one/ws/relay",
   "key": "REPLACE_WITH_SERVER_PUBLIC_KEY"
 }
