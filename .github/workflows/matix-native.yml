@@ -1,0 +1,57 @@
+name: Matix KG native apps
+
+# Builds the branded customer apps (Windows, macOS, Android, iOS) with our server and key
+# baked in, using RustDesk's own build workflow. Needs repository variables MATIX_KG_HOST and
+# MATIX_KG_KEY (Settings > Secrets and variables > Actions > Variables).
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag for the build"
+        default: "matix-kg-nightly"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require server settings
+        env:
+          HOST: ${{ vars.MATIX_KG_HOST }}
+          KEY: ${{ vars.MATIX_KG_KEY }}
+        run: |
+          [ -n "$HOST" ] && [ -n "$KEY" ] || { echo "Set the MATIX_KG_HOST and MATIX_KG_KEY repository variables first."; exit 1; }
+
+  build:
+    needs: check
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      upload-artifact: true
+      upload-tag: ${{ inputs.tag }}
+      matix-kg: true
+
+  rename:
+    # RustDesk's jobs name the files rustdesk-*; give customers MatixKG-* names.
+    needs: build
+    if: ${{ always() && needs.build.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Rename release assets
+        run: |
+          mkdir -p assets && cd assets
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" --pattern 'rustdesk-*' || { echo "no assets"; exit 0; }
+          for f in rustdesk-*; do
+            n="MatixKG-${f#rustdesk-}"
+            mv "$f" "$n"
+            gh release delete-asset "$TAG" "$f" -R "$GITHUB_REPOSITORY" -y
+          done
+          gh release upload "$TAG" MatixKG-* -R "$GITHUB_REPOSITORY" --clobber
+          ls -la
