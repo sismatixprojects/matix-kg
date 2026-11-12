@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs the Matix KG ID/relay server (RustDesk hbbs/hbbr) as systemd services.
-# Usage (as root on a Linux x86_64/arm64 host):  ./install.sh kg.matix.one
+# Usage (as root on a Linux x86_64/arm64 host):  ./install.sh kg-id.matix.one  (a DNS-only name)
 set -euo pipefail
 
 HOST="${1:?usage: install.sh <public-hostname>}"

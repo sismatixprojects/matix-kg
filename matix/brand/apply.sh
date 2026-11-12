@@ -4,7 +4,7 @@
 # right after checkout). Needs MATIX_KG_HOST and MATIX_KG_KEY.
 set -euo pipefail
 
-: "${MATIX_KG_HOST:?set MATIX_KG_HOST, e.g. kg.matix.one}"
+: "${MATIX_KG_HOST:?set MATIX_KG_HOST to the DNS-only ID server name, e.g. kg-id.matix.one}"
 : "${MATIX_KG_KEY:?set MATIX_KG_KEY to the server public key (id_ed25519.pub)}"
 APP_ID="MatixKG"          # internal name: config folders, IPC paths, service names
 DISPLAY_NAME="Matix KG"
