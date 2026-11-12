@@ -55,6 +55,10 @@ jobs:
           sudo apt-get install -y xvfb xterm openbox unzip dbus-x11
           curl -fsSL -o rustdesk.deb "https://github.com/rustdesk/rustdesk/releases/download/${RUSTDESK_VERSION}/rustdesk-${RUSTDESK_VERSION}-x86_64.deb"
           sudo apt-get install -y ./rustdesk.deb
+          # The package starts a root service that manages (and kills) --server processes;
+          # we run the peer ourselves on the virtual display instead.
+          sudo systemctl disable --now rustdesk || true
+          sudo pkill -f "rustdesk --service" || true
           curl -fsSL -o server.zip "https://github.com/rustdesk/rustdesk-server/releases/download/${SERVER_VERSION}/rustdesk-server-linux-amd64.zip"
           unzip -o -q server.zip
           ls -R | head -20
