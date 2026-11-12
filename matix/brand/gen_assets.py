@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Renders the Matix KG icon and writes every icon RustDesk ships, at the same sizes,
+"""Renders the MatixBridge icon and writes every icon RustDesk ships, at the same sizes,
 under matix/brand/assets/<same relative path>. Re-run after changing the design:
     python3 matix/brand/gen_assets.py
 """

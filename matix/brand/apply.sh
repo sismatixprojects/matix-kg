@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Turns this RustDesk checkout into the Matix KG customer app before a native build:
+# Turns this RustDesk checkout into the MatixBridge customer app before a native build:
 # our server and key baked in, our name and icons. Run from the repo root (CI does it
 # right after checkout). Needs MATIX_KG_HOST and MATIX_KG_KEY.
 set -euo pipefail
 
 : "${MATIX_KG_HOST:?set MATIX_KG_HOST to the DNS-only ID server name, e.g. kg-id.matix.one}"
 : "${MATIX_KG_KEY:?set MATIX_KG_KEY to the server public key (id_ed25519.pub)}"
-APP_ID="MatixKG"          # internal name: config folders, IPC paths, service names
-DISPLAY_NAME="Matix KG"
+APP_ID="MatixBridge"          # internal name: config folders, IPC paths, service names
+DISPLAY_NAME="MatixBridge"
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
@@ -33,4 +33,4 @@ sub flutter/ios/Runner/Info.plist 's#(<key>CFBundleDisplayName</key>\s*<string>)
   cp "matix/brand/assets/$f" "$f"
 done
 
-echo "brand: Matix KG applied (server $MATIX_KG_HOST)"
+echo "brand: MatixBridge applied (server $MATIX_KG_HOST)"

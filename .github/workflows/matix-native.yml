@@ -1,4 +1,4 @@
-name: Matix KG native apps
+name: MatixBridge native apps
 
 # Builds the branded customer apps (Windows, macOS, Android, iOS) with our server and key
 # baked in, using RustDesk's own build workflow. Needs repository variables MATIX_KG_HOST and
@@ -9,7 +9,7 @@ on:
     inputs:
       tag:
         description: "Release tag for the build"
-        default: "matix-kg-nightly"
+        default: "matixbridge-nightly"
         required: true
 
 permissions:
@@ -36,7 +36,7 @@ jobs:
       matix-kg: true
 
   rename:
-    # RustDesk's jobs name the files rustdesk-*; give customers MatixKG-* names.
+    # RustDesk's jobs name the files rustdesk-*; give customers MatixBridge-* names.
     needs: build
     if: ${{ always() && needs.build.result != 'cancelled' }}
     runs-on: ubuntu-latest
@@ -49,9 +49,9 @@ jobs:
           mkdir -p assets && cd assets
           gh release download "$TAG" -R "$GITHUB_REPOSITORY" --pattern 'rustdesk-*' || { echo "no assets"; exit 0; }
           for f in rustdesk-*; do
-            n="MatixKG-${f#rustdesk-}"
+            n="MatixBridge-${f#rustdesk-}"
             mv "$f" "$n"
             gh release delete-asset "$TAG" "$f" -R "$GITHUB_REPOSITORY" -y
           done
-          gh release upload "$TAG" MatixKG-* -R "$GITHUB_REPOSITORY" --clobber
+          gh release upload "$TAG" MatixBridge-* -R "$GITHUB_REPOSITORY" --clobber
           ls -la

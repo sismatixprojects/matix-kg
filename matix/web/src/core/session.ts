@@ -168,7 +168,7 @@ export class Session {
     } catch (e) {
       if (e instanceof SessionError) throw e;
       if (e instanceof ChannelClosed) throw new SessionError(`The ID server closed the connection (${e.message})`);
-      throw new SessionError(e instanceof Error && /Timed out/.test(e.message) ? "The remote computer did not answer. Is the Matix KG app running?" : String(e));
+      throw new SessionError(e instanceof Error && /Timed out/.test(e.message) ? "The remote computer did not answer. Is the MatixBridge app running?" : String(e));
     } finally {
       ch.close();
     }
@@ -364,7 +364,7 @@ export class Session {
     const lr: M.ILoginRequest = {
       username: this.peerId,
       password: p,
-      my_id: "matix-kg-web",
+      my_id: "matixbridge-web",
       my_name: this.opts.agentName || "Matix Support",
       my_platform: "Web",
       session_id: this.sessionId,

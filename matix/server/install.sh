@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the Matix KG ID/relay server (RustDesk hbbs/hbbr) as systemd services.
+# Installs the MatixBridge ID/relay server (RustDesk hbbs/hbbr) as systemd services.
 # Usage (as root on a Linux x86_64/arm64 host):  ./install.sh kg-id.matix.one  (a DNS-only name)
 set -euo pipefail
 
@@ -30,7 +30,7 @@ rm -rf "$tmp"
 # (mode 0600, owned by matixkg). Otherwise hbbr creates one on first start.
 cat > /etc/systemd/system/matix-kg-hbbr.service <<UNIT
 [Unit]
-Description=Matix KG relay server (hbbr)
+Description=MatixBridge relay server (hbbr)
 After=network-online.target
 Wants=network-online.target
 
@@ -52,7 +52,7 @@ UNIT
 
 cat > /etc/systemd/system/matix-kg-hbbs.service <<UNIT
 [Unit]
-Description=Matix KG ID server (hbbs)
+Description=MatixBridge ID server (hbbs)
 After=network-online.target matix-kg-hbbr.service
 Wants=network-online.target
 
@@ -80,7 +80,7 @@ for i in $(seq 1 20); do [ -s "$DATA/id_ed25519.pub" ] && break; sleep 0.5; done
 
 cat <<MSG
 
-Matix KG server is running.
+MatixBridge server is running.
   Public key (goes into the web client's config.json and the customer app build):
     $(cat "$DATA/id_ed25519.pub")
 
