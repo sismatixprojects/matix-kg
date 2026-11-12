@@ -12,6 +12,10 @@ on:
       publish-update-metadata:
         type: boolean
         default: false
+      matix-kg:
+        description: "Matix KG build: brand the app and build only Windows, macOS, iOS and Android"
+        type: boolean
+        default: false
 
 # NOTE: F-Droid builder script 'flutter/build_fdroid.sh' reads environment
 # variables from this workflow!
@@ -100,6 +104,7 @@ jobs:
         run: python res/update/generate_update_metadata.py check-key
 
   generate-sbom:
+    if: ${{ !inputs.matix-kg }}
     needs: [validate-update-metadata-keys]
     runs-on: ubuntu-latest
 
@@ -194,6 +199,14 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Apply Matix KG branding
+        if: ${{ inputs.matix-kg }}
+        shell: bash
+        env:
+          MATIX_KG_HOST: ${{ vars.MATIX_KG_HOST }}
+          MATIX_KG_KEY: ${{ vars.MATIX_KG_KEY }}
+        run: bash matix/brand/apply.sh
 
       - name: Restore bridge files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -581,6 +594,7 @@ jobs:
 
   # The fallback for the flutter version, we use Sciter for 32bit Windows.
   build-for-windows-sciter:
+    if: ${{ !inputs.matix-kg }}
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     needs: [validate-update-metadata-keys]
     runs-on: ${{ matrix.job.os }}
@@ -823,6 +837,14 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Apply Matix KG branding
+        if: ${{ inputs.matix-kg }}
+        shell: bash
+        env:
+          MATIX_KG_HOST: ${{ vars.MATIX_KG_HOST }}
+          MATIX_KG_KEY: ${{ vars.MATIX_KG_KEY }}
+        run: bash matix/brand/apply.sh
+
       - name: Install flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
@@ -951,6 +973,14 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Apply Matix KG branding
+        if: ${{ inputs.matix-kg }}
+        shell: bash
+        env:
+          MATIX_KG_HOST: ${{ vars.MATIX_KG_HOST }}
+          MATIX_KG_KEY: ${{ vars.MATIX_KG_KEY }}
+        run: bash matix/brand/apply.sh
 
       - name: Import the codesign cert
         if: env.MACOS_P12_BASE64 != null
@@ -1345,7 +1375,7 @@ jobs:
       - build-for-windows-flutter
       - build-for-windows-sciter
     runs-on: ubuntu-latest
-    if: ${{ inputs.upload-artifact }}
+    if: ${{ (inputs.upload-artifact) && !inputs.matix-kg }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -1511,6 +1541,14 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Apply Matix KG branding
+        if: ${{ inputs.matix-kg }}
+        shell: bash
+        env:
+          MATIX_KG_HOST: ${{ vars.MATIX_KG_HOST }}
+          MATIX_KG_KEY: ${{ vars.MATIX_KG_KEY }}
+        run: bash matix/brand/apply.sh
 
       - name: Check JNI natives are in ffi.FFI
         # Custom clients rename com.carriez.flutter_hbb; only ffi.FFI keeps its name.
@@ -1918,6 +1956,7 @@ jobs:
             signed-apk/rustdesk-${{ env.VERSION }}-universal${{ env.suffix }}.apk
 
   build-rustdesk-linux:
+    if: ${{ !inputs.matix-kg }}
     needs: [generate-bridge]
     name: build rustdesk linux ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.on }}
@@ -2272,6 +2311,7 @@ jobs:
   # old for it. A separate job rather than a matrix entry of build-rustdesk-linux: appimage and
   # flatpak need that job, and a failure here must not skip them.
   build-rustdesk-linux-drm:
+    if: ${{ !inputs.matix-kg }}
     needs: [generate-bridge]
     name: build rustdesk linux drm x86_64
     runs-on: ubuntu-22.04
@@ -2591,7 +2631,7 @@ jobs:
           path: ${{ env.DRM_DEB }}
 
   build-rustdesk-linux-sciter:
-    if: ${{ inputs.upload-artifact }}
+    if: ${{ (inputs.upload-artifact) && !inputs.matix-kg }}
     needs: [validate-update-metadata-keys]
     runs-on: ${{ matrix.job.on }}
     name: build-rustdesk-linux-sciter ${{ matrix.job.target }}

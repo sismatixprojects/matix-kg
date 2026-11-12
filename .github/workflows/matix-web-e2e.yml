@@ -67,10 +67,10 @@ jobs:
           BIN=$(cd "$(dirname "$(find . -name hbbs -type f | head -1)")" && pwd)
           chmod +x "$BIN/hbbs" "$BIN/hbbr"
           mkdir -p srv && cd srv
-          # Bind to the runner IP, not loopback: hbbr treats loopback TCP as its admin console.
-          nohup "$BIN/hbbr" -b "$IP" -k _ > hbbr.log 2>&1 &
+          # Peers must reach hbbr via the runner IP, not loopback: hbbr treats loopback TCP as its admin console.
+          nohup "$BIN/hbbr" -k _ > hbbr.log 2>&1 &
           sleep 1
-          nohup "$BIN/hbbs" -b "$IP" -r "$IP:21117" -k _ > hbbs.log 2>&1 &
+          nohup "$BIN/hbbs" -r "$IP:21117" -k _ > hbbs.log 2>&1 &
           for i in $(seq 1 20); do [ -s id_ed25519.pub ] && break; sleep 0.5; done
           if [ ! -s id_ed25519.pub ]; then cat hbbr.log hbbs.log; exit 1; fi
           KEY=$(cat id_ed25519.pub)
