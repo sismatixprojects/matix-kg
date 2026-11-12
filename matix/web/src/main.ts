@@ -98,10 +98,13 @@ async function loadConfig(): Promise<ServerConfig> {
   } catch {
     /* fall through to query params */
   }
-  // Dev overrides: ?idServer=ws://host:21118&relayServer=ws://host:21119&key=...
-  for (const k of ["idServer", "relayServer", "key"] as const) {
-    const v = q.get(k);
-    if (v) cfg[k] = v;
+  // Dev builds only: ?idServer=ws://host:21118&relayServer=ws://host:21119&key=...
+  // Production must never take the server or its key from a link: the key is the trust anchor.
+  if (import.meta.env.DEV) {
+    for (const k of ["idServer", "relayServer", "key"] as const) {
+      const v = q.get(k);
+      if (v) cfg[k] = v;
+    }
   }
   if (!cfg.idServer || !cfg.relayServer || !cfg.key || cfg.key.startsWith("REPLACE")) {
     throw new Error("The web client is not configured (config.json is missing the server addresses or key).");

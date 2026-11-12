@@ -248,6 +248,10 @@ export class Session {
             this.loginReject?.(new SessionError("The remote computer has no display."));
             return;
           }
+          // An installed Windows peer with several sessions (RDP) waits for us to pick one
+          // before it streams; take the session it is running in, as most agents would.
+          const ws = this.peerInfo.windows_sessions;
+          if (ws?.sessions?.length) this.send({ misc: { selected_sid: ws.current_sid } });
           this.emit("ready", this.peerInfo);
           this.loginResolve?.();
         }

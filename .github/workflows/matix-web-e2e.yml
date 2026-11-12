@@ -132,10 +132,11 @@ jobs:
 
       - name: Browser test (headless Chromium)
         run: |
+          # Production builds read the server and key only from config.json.
+          printf '{"idServer":"ws://%s:21118","relayServer":"ws://%s:21119","key":"%s"}\n' "$IP" "$IP" "$KEY" > dist/config.json
           npx vite preview --port 4173 --strictPort --host 127.0.0.1 > preview.log 2>&1 &
           sleep 2
-          KEY_Q=$(node -e 'console.log(encodeURIComponent(process.env.KEY))')
-          URL="http://127.0.0.1:4173/?idServer=ws://$IP:21118&relayServer=ws://$IP:21119&key=$KEY_Q" SHOT_DIR="$RUNNER_TEMP" node scripts/browser-e2e.mjs
+          URL="http://127.0.0.1:4173/" SHOT_DIR="$RUNNER_TEMP" node scripts/browser-e2e.mjs
 
       - name: File transfer test (Node)
         # The peer serves file operations from its connection-manager window (a Flutter GUI),
