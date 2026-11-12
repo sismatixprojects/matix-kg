@@ -1,7 +1,7 @@
 # MatixBridge
 
 > The tool was first called "Matix KG". Infrastructure that is already deployed keeps that name:
-> `kg.matix.one`, the cPanel account `kgmatix`, the systemd units `matix-kg-hbbs`/`matix-kg-hbbr`,
+> the old address `kg.matix.one` (now a redirect), the cPanel account `kgmatix`, the systemd units `matix-kg-hbbs`/`matix-kg-hbbr`,
 > `/var/lib/matix-kg`, the repository variables `MATIX_KG_*` and the `matix-kg` build input.
 
 Remote support for Matix: a support agent controls a customer's PC from the browser.
@@ -14,14 +14,14 @@ It is built on RustDesk (AGPL-3.0). The fork adds three things and leaves upstre
 | `matix/server` | Install kit for the **ID/relay server** (RustDesk `hbbs`/`hbbr`) and its TLS proxy |
 
 ```
-agent's browser ──wss──► kg.matix.one (Cloudflare ► nginx/Apache) ──► hbbs :21118 / hbbr :21119
+agent's browser ──wss──► bridge.matix.one (Cloudflare ► nginx/Apache) ──► hbbs :21118 / hbbr :21119
                                                                           ▲            ▲
 customer's MatixBridge app ──tcp/udp 21115-21117──► kg-id.matix.one (DNS only) ┘            │
                         └──────────────── relayed session (always, for web) ─────────────┘
 ```
 
 A browser can only be the controlling side. Customers run the MatixBridge app; agents use
-`https://kg.matix.one/web/`, or the app itself.
+`https://bridge.matix.one/web/`, or the app itself.
 
 ## Web client (`matix/web`)
 
@@ -52,7 +52,7 @@ npx tsx scripts/files-smoke.ts   # upload + list + download + compare
 `config.json` (served next to `index.html`):
 
 ```json
-{ "idServer": "wss://kg.matix.one/ws/id", "relayServer": "wss://kg.matix.one/ws/relay", "key": "<id_ed25519.pub>" }
+{ "idServer": "wss://bridge.matix.one/ws/id", "relayServer": "wss://bridge.matix.one/ws/relay", "key": "<id_ed25519.pub>" }
 ```
 
 CI (`.github/workflows/matix-web-e2e.yml`) starts an unmodified RustDesk peer on a virtual X
@@ -67,7 +67,8 @@ TCP connections from loopback as its admin console, so a local peer's relay conn
 
 ## Production (since 2026-11-12)
 
-- **Web client:** https://kg.matix.one/web/ (Cloudflare proxied). Files live in the cPanel account `kgmatix`,
+- **Web client:** https://bridge.matix.one/web/ (Cloudflare proxied). `kg.matix.one` 301-redirects there, but its
+  `/ws/*` paths still work. Files live in the cPanel account `kgmatix`, where `bridge.matix.one` is a parked domain,
   under `public_html/web/`, served through the Apache include in `matix/server/apache.conf`.
 - **ID/relay server:** systemd units `matix-kg-hbbs` and `matix-kg-hbbr` on 72.52.136.5 (US). Data is in
   `/var/lib/matix-kg`, and the public key is `0sY5K0X3HCRHqb4wfySRcEk1zJTzUmeeW5n3UUMLL9c=`.
@@ -82,7 +83,7 @@ TCP connections from loopback as its admin console, so a local peer's relay conn
 1. **Host.** Any small Linux VM works. Pick one close to the customers, since web sessions
    are always relayed (a Gulf region suits Egypt).
 2. **DNS (Cloudflare).**
-   - `kg.matix.one`: proxied (orange). Carries the web client and its WebSockets.
+   - `bridge.matix.one`: proxied (orange). Carries the web client and its WebSockets.
    - `kg-id.matix.one`: **DNS only (grey)**. Cloudflare does not carry ports 21115–21117 or UDP.
 3. **Install.** On the server, run `sudo ./install.sh kg-id.matix.one`. It installs
    `hbbs`/`hbbr` as systemd services and prints the public key.
