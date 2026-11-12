@@ -61,6 +61,18 @@ display behind our own `hbbs`/`hbbr`, then runs:
 **Local testing pitfall:** bind `hbbs`/`hbbr` to a LAN IP, never `127.0.0.1`. `hbbr` treats
 TCP connections from loopback as its admin console, so a local peer's relay connection gets reset.
 
+## Production (since 2026-11-12)
+
+- **Web client:** https://kg.matix.one/web/ (Cloudflare proxied). Files live in the cPanel account `kgmatix`,
+  under `public_html/web/`, served through the Apache include in `matix/server/apache.conf`.
+- **ID/relay server:** systemd units `matix-kg-hbbs` and `matix-kg-hbbr` on 72.52.136.5 (US). Data is in
+  `/var/lib/matix-kg`, and the public key is `0sY5K0X3HCRHqb4wfySRcEk1zJTzUmeeW5n3UUMLL9c=`.
+  - CSF opens TCP 21115:21117 and UDP 21116. Ports 21118/21119 are reachable only through Apache.
+  - The customer app reaches the server by IP. Moving hosts means rebuilding the apps, or using a DNS-only name.
+- **Update the web client:** `npm run build`, then put the production `config.json` into `dist/`, then
+  `rsync -a --delete dist/ root@72.52.136.5:/home/kgmatix/public_html/web/` (port 522), then
+  `chown -R kgmatix:kgmatix`.
+
 ## Server (`matix/server`)
 
 1. **Host.** Any small Linux VM works. Pick one close to the customers, since web sessions
