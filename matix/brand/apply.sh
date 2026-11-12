@@ -26,6 +26,7 @@ sub "$cfg" "s/(pub static ref APP_NAME: RwLock<String> = RwLock::new\()\"RustDes
 sub flutter/windows/runner/Runner.rc 's/VALUE "FileDescription", "RustDesk Remote Desktop"/VALUE "FileDescription", "'"$DISPLAY_NAME"' Remote Support"/'
 sub flutter/windows/runner/Runner.rc 's/VALUE "ProductName", "RustDesk"/VALUE "ProductName", "'"$DISPLAY_NAME"'"/'
 sub flutter/android/app/src/main/AndroidManifest.xml 's/android:label="RustDesk"/android:label="'"$DISPLAY_NAME"'"/'
+sub flutter/android/app/src/main/AndroidManifest.xml 's/android:label="RustDesk Input"/android:label="'"$DISPLAY_NAME"' Input"/'
 sub flutter/ios/Runner/Info.plist 's#(<key>CFBundleDisplayName</key>\s*<string>)RustDesk(</string>)#${1}'"$DISPLAY_NAME"'${2}#'
 
 # Icons: same paths and sizes as upstream, pre-rendered by matix/brand/gen_assets.py.
