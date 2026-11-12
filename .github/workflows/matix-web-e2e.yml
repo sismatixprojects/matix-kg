@@ -11,7 +11,7 @@ on:
       - "matix/**"
       - ".github/workflows/matix-web-e2e.yml"
   push:
-    branches: [master]
+    branches: [master, "matix/**"]
     paths:
       - "matix/**"
       - ".github/workflows/matix-web-e2e.yml"
