@@ -129,7 +129,7 @@ function connectScreen(cfg: ServerConfig, error = "") {
   const form = h(
     "form",
     { class: "card" },
-    h("div", { class: "brand" }, h("img", { src: "./favicon.svg", alt: "" }), h("div", {}, h("h1", {}, "MatixBridge"), h("p", {}, "Remote support"))),
+    h("div", { class: "brand" }, h("img", { src: "./favicon.svg", alt: "" }), h("div", {}, h("h1", {}, "Matix", h("b", {}, "Bridge")), h("p", {}, "Remote support by Matix"))),
     h("label", { for: "peer-id" }, "Customer's MatixBridge ID"),
     id,
     h("label", { for: "peer-pw" }, "Password"),
@@ -166,7 +166,7 @@ function connectScreen(cfg: ServerConfig, error = "") {
     id.value = formatId(peer);
     pw.focus();
   }, start);
-  app.append(h("div", { class: "connect" }, h("div", { class: "connect-grid" }, form, panel), h("div", { class: "footer" }, "MatixBridge · based on RustDesk (AGPL-3.0)")));
+  app.append(h("div", { class: "connect" }, h("div", { class: "connect-grid" }, form, panel), h("div", { class: "footer" }, "MatixBridge by Matix · Sismatix Information Systems · ", h("a", { href: "https://github.com/sismatixprojects/matixbridge", target: "_blank", rel: "noopener" }, "based on RustDesk (AGPL-3.0)"))));
   if (!webCodecsAvailable()) err.textContent = "This browser cannot show remote screens (no WebCodecs). Use Chrome, Edge or Safari 16.4+.";
   id.focus();
 }
@@ -249,7 +249,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const moreWrap = h("div", { class: "tb-menu-wrap" }, bMore, moreMenu);
   bClose.classList.add("danger");
 
-  const toolbar = h("div", { class: "toolbar" }, title, bDisplay, bQuality, bCad, bLock, bRefresh, bType, bClip, bFit, moreWrap, h("div", { class: "spacer" }), bChat, bFiles, bRec, bFull, bClose);
+  const toolbar = h("div", { class: "toolbar" }, h("div", { class: "tb-brand", title: "MatixBridge by Matix" }, h("img", { src: "./favicon.svg", alt: "MatixBridge" })), title, bDisplay, bQuality, bCad, bLock, bRefresh, bType, bClip, bFit, moreWrap, h("div", { class: "spacer" }), bChat, bFiles, bRec, bFull, bClose);
   const root = h("div", { class: "session" }, toolbar, h("div", { class: "body" }, stage, drawerHost));
   app.append(root);
   statusBox(overlay, "Connecting…");

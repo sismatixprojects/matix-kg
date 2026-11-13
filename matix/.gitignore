@@ -1,0 +1,4 @@
+# The repository root ignores *png and *svg (RustDesk build outputs); our brand assets and
+# web/site images are sources and must be committed.
+!*.png
+!*.svg
