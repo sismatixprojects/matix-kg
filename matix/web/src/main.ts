@@ -466,6 +466,8 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
       menuItem("Block the customer's mouse and keyboard", () => {
         ctl.block = !ctl.block;
         session.setBlockInput(ctl.block);
+        // The peer reports only failures for this, so confirm right away.
+        toast(ctl.block ? "The customer's mouse and keyboard are blocked" : "The customer's mouse and keyboard work again", false, 2500);
       }, { checked: ctl.block, disabled: isWin ? "" : "Only Windows computers support this" }),
       menuItem("Privacy mode: black out the customer's screen", () => {
         ctl.privacy = !ctl.privacy;
@@ -497,14 +499,10 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   session.on("notice", (kind, state, details) => {
     const B = M.BackNotification;
     if (kind === "block") {
-      const ok = state === B.BlockInputState.BlkOnSucceeded || state === B.BlockInputState.BlkOffSucceeded;
-      if (!ok) ctl.block = state === B.BlockInputState.BlkOffFailed;
-      toast(
-        state === B.BlockInputState.BlkOnSucceeded ? "The customer's mouse and keyboard are blocked"
-          : state === B.BlockInputState.BlkOffSucceeded ? "The customer's mouse and keyboard work again"
-          : "The remote computer could not change input blocking",
-        !ok
-      );
+      if (state === B.BlockInputState.BlkOnFailed || state === B.BlockInputState.BlkOffFailed) {
+        ctl.block = state === B.BlockInputState.BlkOffFailed;
+        toast(`Could not ${state === B.BlockInputState.BlkOnFailed ? "block" : "unblock"} the customer's input${details ? `: ${details}` : ""}`, true);
+      }
       return;
     }
     const P = B.PrivacyModeState;
