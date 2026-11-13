@@ -276,8 +276,8 @@ jobs:
           Write-Host "=== browser"
           Push-Location matix/web
           '{"idServer":"ws://' + $env:IP + ':21118","relayServer":"ws://' + $env:IP + ':21119","key":"' + $env:KEY + '"}' | Out-File -Encoding ascii dist\config.json
-          Start-Process npx -ArgumentList 'vite','preview','--port','4173','--strictPort','--host','127.0.0.1' -WindowStyle Hidden
-          Start-Sleep 4
+          Start-Process node -ArgumentList 'node_modules/vite/bin/vite.js','preview','--port','4173','--strictPort','--host','127.0.0.1' -WindowStyle Hidden
+          for ($i = 0; $i -lt 30; $i++) { try { Invoke-WebRequest http://127.0.0.1:4173/ -UseBasicParsing -TimeoutSec 2 | Out-Null; break } catch { Start-Sleep 1 } }
           $env:URL = "http://127.0.0.1:4173/"
           $env:SHOT_DIR = $env:RUNNER_TEMP
           node scripts/browser-e2e.mjs; if ($LASTEXITCODE) { throw 'browser test failed' }
