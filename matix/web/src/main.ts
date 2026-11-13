@@ -4,6 +4,7 @@ import { Session, SessionError, type ServerConfig } from "./core/session";
 import { FileSession, type RemoteDir, type RemoteEntry } from "./core/files";
 import { VideoSink, webCodecsAvailable } from "./ui/video";
 import { mapKey, remoteOs, type RemoteOs } from "./ui/keymap";
+import { book, displayName, osLabel, timeAgo, type Device } from "./ui/addressbook";
 
 const MOUSE_MOVE = 0, MOUSE_DOWN = 1, MOUSE_UP = 2, MOUSE_WHEEL = 3;
 const BUTTONS = [0x01, 0x04, 0x02, 0x08, 0x10]; // DOM button index -> RustDesk button bit
@@ -124,15 +125,6 @@ function connectScreen(cfg: ServerConfig, error = "") {
   id.addEventListener("input", () => {
     id.value = formatId(id.value);
   });
-  const recent = h("div", { class: "recent" });
-  for (const r of store.get("recent").split(",").filter(Boolean).slice(0, 6)) {
-    const c = h("button", { class: "chip", type: "button" }, formatId(r));
-    c.onclick = () => {
-      id.value = formatId(r);
-      pw.focus();
-    };
-    recent.append(c);
-  }
   const form = h(
     "form",
     { class: "card" },
@@ -145,8 +137,7 @@ function connectScreen(cfg: ServerConfig, error = "") {
     h("label", { for: "agent" }, "Shown to the customer as"),
     agent,
     go,
-    err,
-    recent
+    err
   );
   const opts = h("label", {}, h("input", { type: "checkbox", id: "files-only" }), " Open file transfer only");
   opts.style.display = "flex";
@@ -161,13 +152,20 @@ function connectScreen(cfg: ServerConfig, error = "") {
       return;
     }
     store.set("agent", agent.value.trim());
-    const rec = [peer, ...store.get("recent").split(",").filter((x) => x && x !== peer)].slice(0, 6);
-    store.set("recent", rec.join(","));
     const filesOnly = (document.getElementById("files-only") as HTMLInputElement).checked;
     if (filesOnly) void filesScreen(cfg, peer, pw.value, agent.value.trim() || "Matix Support");
     else void sessionScreen(cfg, peer, pw.value, agent.value.trim() || "Matix Support");
   };
-  app.append(h("div", { class: "connect" }, form, h("div", { class: "footer" }, "MatixBridge · based on RustDesk (AGPL-3.0)")));
+  const start = (peer: string, filesOnly: boolean) => {
+    id.value = formatId(peer);
+    (document.getElementById("files-only") as HTMLInputElement).checked = filesOnly;
+    form.requestSubmit();
+  };
+  const panel = addressBookPanel((peer) => {
+    id.value = formatId(peer);
+    pw.focus();
+  }, start);
+  app.append(h("div", { class: "connect" }, h("div", { class: "connect-grid" }, form, panel), h("div", { class: "footer" }, "MatixBridge · based on RustDesk (AGPL-3.0)")));
   if (!webCodecsAvailable()) err.textContent = "This browser cannot show remote screens (no WebCodecs). Use Chrome, Edge or Safari 16.4+.";
   id.focus();
 }
@@ -213,7 +211,16 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const overlay = h("div", { class: "overlay" });
   const stage = h("div", { class: "stage" }, canvas, overlay);
   const drawerHost = h("div", { class: "drawer hidden" });
-  const title = h("div", { class: "title" }, h("b", {}, formatId(peerId)), h("span", {}, "Connecting…"));
+  const title = h("div", { class: "title", title: "Click to name this device" }, h("b", {}, formatId(peerId)), h("span", {}, "Connecting…"));
+  title.style.cursor = "pointer";
+  title.onclick = () => {
+    const cur = book.get(peerId);
+    const name = window.prompt("Name for this device (e.g. customer or company):", cur?.name || "");
+    if (name === null) return;
+    book.upsert(peerId, { name: name.trim() });
+    (title.firstChild as HTMLElement).textContent = name.trim() ? `${name.trim()} · ${formatId(peerId)}` : formatId(peerId);
+    canvas.focus();
+  };
 
   const bDisplay = h("label", { class: "tb hidden", title: "Remote display" });
   const displaySel = h("select");
@@ -310,6 +317,9 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
 
   session.on("ready", (pi) => {
     os = remoteOs(pi.platform);
+    book.record(peerId, { host: pi.hostname, user: pi.username, platform: pi.platform });
+    const saved = book.get(peerId);
+    if (saved?.name) (title.firstChild as HTMLElement).textContent = `${saved.name} · ${formatId(peerId)}`;
     (title.lastChild as HTMLElement).textContent = `${pi.username || ""}@${pi.hostname || ""} · ${pi.platform}`;
     displaySel.replaceChildren();
     pi.displays.forEach((d, i) => displaySel.append(h("option", { value: String(i) }, `Display ${i + 1} (${d.width}×${d.height})`)));
@@ -574,6 +584,122 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   }
 }
 
+// ---------- address book ----------
+function addressBookPanel(pick: (id: string) => void, start: (id: string, filesOnly: boolean) => void): HTMLElement {
+  const search = h("input", { class: "field", placeholder: "Search name, ID or computer…", type: "search" });
+  const list = h("ul", { class: "book-list" });
+  const count = h("span", { class: "book-count" });
+  const addBtn = h("button", { class: "btn", type: "button", title: "Add a device without connecting" }, "+ Add");
+  const menuBtn = h("button", { class: "btn", type: "button", title: "Export or import" }, "⋯");
+  const menu = h("div", { class: "book-menu hidden" });
+  const exp = h("button", { type: "button" }, "Export to file");
+  const imp = h("button", { type: "button" }, "Import from file");
+  const file = h("input", { type: "file", accept: ".json,application/json" }) as HTMLInputElement;
+  file.style.display = "none";
+  menu.append(exp, imp);
+  menuBtn.onclick = (e) => {
+    e.stopPropagation();
+    menu.classList.toggle("hidden");
+  };
+  document.addEventListener("click", () => menu.classList.add("hidden"));
+  exp.onclick = () => {
+    saveBlob(new Blob([book.exportJson()], { type: "application/json" }), `MatixBridge-devices-${new Date().toISOString().slice(0, 10)}.json`);
+  };
+  imp.onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files?.[0];
+    file.value = "";
+    if (!f) return;
+    try {
+      const n = book.importJson(await f.text());
+      toast(`Imported ${n} device${n === 1 ? "" : "s"}.`);
+      render();
+    } catch {
+      toast("That file is not a MatixBridge device list.", true);
+    }
+  };
+  addBtn.onclick = () => {
+    const raw = window.prompt("Device ID:");
+    const did = (raw || "").replace(/\D/g, "");
+    if (did.length < 6) return;
+    const name = window.prompt("Name (customer or company):", "") || "";
+    book.upsert(did, { name: name.trim() });
+    render();
+  };
+  search.addEventListener("input", () => render());
+
+  function card(d: Device) {
+    const letter = (displayName(d).trim()[0] || "#").toUpperCase();
+    const hue = [...d.id].reduce((a, c) => a + c.charCodeAt(0) * 7, 0) % 360;
+    const av = h("span", { class: "book-av" }, letter);
+    av.style.background = `hsl(${hue} 55% 38%)`;
+    const nameEl = h("b", { class: "book-name" }, displayName(d));
+    const meta = [d.host && d.name ? d.host : "", osLabel(d.platform), d.last ? timeAgo(d.last) : "not connected yet"].filter(Boolean).join(" · ");
+    const star = h("button", { class: "icon-btn" + (d.fav ? " on" : ""), type: "button", title: d.fav ? "Unpin" : "Pin to top" }, d.fav ? "★" : "☆");
+    const edit = h("button", { class: "icon-btn", type: "button", title: "Rename" }, "✎");
+    const del = h("button", { class: "icon-btn", type: "button", title: "Remove" }, "🗑");
+    const files = h("button", { class: "icon-btn", type: "button", title: "File transfer" }, "📁");
+    const connect = h("button", { class: "btn primary", type: "button" }, "Connect");
+    star.onclick = (e) => {
+      e.stopPropagation();
+      book.upsert(d.id, { fav: !d.fav });
+      render();
+    };
+    edit.onclick = (e) => {
+      e.stopPropagation();
+      const name = window.prompt("Name for this device:", d.name);
+      if (name === null) return;
+      book.upsert(d.id, { name: name.trim() });
+      render();
+    };
+    del.onclick = (e) => {
+      e.stopPropagation();
+      if (window.confirm(`Remove ${displayName(d)} (${formatId(d.id)}) from your devices?`)) {
+        book.remove(d.id);
+        render();
+      }
+    };
+    files.onclick = (e) => {
+      e.stopPropagation();
+      start(d.id, true);
+    };
+    connect.onclick = (e) => {
+      e.stopPropagation();
+      start(d.id, false);
+    };
+    const li = h(
+      "li",
+      { class: "book-item", title: "Click to fill the ID" },
+      av,
+      h("div", { class: "book-info" }, nameEl, h("span", { class: "book-id" }, formatId(d.id)), h("span", { class: "book-meta" }, meta)),
+      h("div", { class: "book-actions" }, star, edit, files, del, connect)
+    );
+    li.onclick = () => pick(d.id);
+    return li;
+  }
+
+  function render() {
+    const q = search.value.trim().toLowerCase();
+    const qd = q.replace(/\s/g, "");
+    const all = book.all();
+    const shown = all.filter((d) => !q || displayName(d).toLowerCase().includes(q) || d.host.toLowerCase().includes(q) || d.user.toLowerCase().includes(q) || (qd && d.id.includes(qd)));
+    count.textContent = all.length ? String(all.length) : "";
+    list.replaceChildren(...shown.map(card));
+    if (!all.length) list.append(h("li", { class: "book-empty" }, "Devices you connect to appear here, so you can reconnect in one click. Click the device name during a session to label it."));
+    else if (!shown.length) list.append(h("li", { class: "book-empty" }, "No device matches your search."));
+  }
+  render();
+  return h(
+    "section",
+    { class: "card book" },
+    h("div", { class: "book-head" }, h("h2", {}, "Customer devices ", count), h("div", { class: "book-tools" }, addBtn, h("div", { class: "book-menu-wrap" }, menuBtn, menu))),
+    search,
+    list,
+    file,
+    h("div", { class: "hint" }, "Saved in this browser only. Use ⋯ › Export to move the list to another computer.")
+  );
+}
+
 // ---------- files panel (used inside a session and stand-alone) ----------
 class FilesPanel {
   el: HTMLElement;
@@ -637,6 +763,8 @@ class FilesPanel {
         this.connecting = undefined;
       });
       await fs.connect(this.password || undefined);
+      const pi = fs.session.peerInfo;
+      book.record(this.peerId, { host: pi?.hostname, user: pi?.username, platform: pi?.platform });
       this.fs = fs;
       await this.load("");
     })().catch((e) => {
