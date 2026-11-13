@@ -104,10 +104,16 @@ try {
     // Launched from a ticket in agents.matix.one: single-use code + device + ticket in the fragment.
     await page.goto("about:blank");
     await page.goto(`${url}#code=ci-code&id=${id}&ticket=10`);
-    await page.waitForSelector(".overlay input[type=password]", { timeout: 45000 });
+    // Without a password the session waits for the customer to click Accept, which this headless
+    // peer cannot do. Cancel, then connect with the password like an agent would: the ticket stays
+    // attached to this device.
+    await page.waitForSelector("text=Waiting for the customer to accept", { timeout: 45000 });
     if (page.url().includes("#")) throw new Error("The sign-in code was left in the address bar");
-    await page.fill(".overlay input[type=password]", password);
-    await page.press(".overlay input[type=password]", "Enter");
+    await page.click('button[title="Disconnect"]');
+    await page.waitForSelector(".team-ticket", { timeout: 10000 });
+    if ((await page.inputValue("#peer-id")).replace(/\D/g, "") !== id) throw new Error("The device ID was not kept");
+    await page.fill("#peer-pw", password);
+    await page.click("form.card button[type=submit]");
     await waitFor(() => calls.some((c) => c.path === "/sessions"), 45000, "the session to be logged");
     const start = calls.find((c) => c.path === "/sessions");
     console.log("logged session:", JSON.stringify(start.body));
