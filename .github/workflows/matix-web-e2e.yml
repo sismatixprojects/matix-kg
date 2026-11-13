@@ -216,14 +216,14 @@ jobs:
           $pw = "e2e-" + [guid]::NewGuid().ToString('N').Substring(0, 12)
           Write-Host "::add-mask::$pw"
           "PASSWORD=$pw" | Out-File -Append $env:GITHUB_ENV
-          function rd($a) { $p = Start-Process $exe -ArgumentList $a -Wait -PassThru -RedirectStandardOutput out.txt; Get-Content out.txt -ErrorAction SilentlyContinue }
+          function Invoke-Peer($a) { $p = Start-Process $exe -ArgumentList $a -Wait -PassThru -RedirectStandardOutput out.txt; Get-Content out.txt -ErrorAction SilentlyContinue }
           Start-Sleep 5
-          rd @('--option','custom-rendezvous-server',$env:IP)
-          rd @('--option','relay-server',$env:IP)
-          rd @('--option','key',$env:KEY)
-          rd @('--option','approve-mode','password')
-          rd @('--option','verification-method','use-permanent-password')
-          rd @('--password',$pw)
+          Invoke-Peer @('--option','custom-rendezvous-server',$env:IP)
+          Invoke-Peer @('--option','relay-server',$env:IP)
+          Invoke-Peer @('--option','key',$env:KEY)
+          Invoke-Peer @('--option','approve-mode','password')
+          Invoke-Peer @('--option','verification-method','use-permanent-password')
+          Invoke-Peer @('--password',$pw)
           Restart-Service -Name RustDesk -ErrorAction SilentlyContinue
           Start-Process notepad.exe
           $id = ''
