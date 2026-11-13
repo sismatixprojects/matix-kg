@@ -30,4 +30,6 @@ curl -fsSL -o $D/MatixBridge-macOS-Intel.dmg $U/MatixBridge-<ver>-x86_64.dmg
 chown matixerpcom:matixerpcom $D/*
 ```
 
-Then update the version and sizes in the page text (`dl_*_meta`, the cards).
+Then update the version and sizes in the page text (`dl_*_meta`, the cards), and bump the `?v=` on every download
+link in the page (`sed -i 's/?v=OLD/?v=NEW/g' index.html`). Cloudflare caches the files by full URL, so a new `?v=`
+is what makes visitors get the new build at once. The `download/.htaccess` keeps the bare links' cache to 5 minutes.
