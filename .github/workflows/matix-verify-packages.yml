@@ -22,6 +22,10 @@ jobs:
       run:
         shell: pwsh
     steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: src
+          sparse-checkout: matix/brand
       - name: Install the MSI and check the result
         env:
           GH_TOKEN: ${{ github.token }}
@@ -58,6 +62,17 @@ jobs:
           $proc = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*MatixBridge*' }
           $proc | ForEach-Object { Write-Host "     running: $($_.ProcessName) $($_.Path)" }
           Check "MatixBridge process running" ($proc -ne $null)
+          # The exe's icon resources hold the .ico's PNG images byte for byte.
+          $py = @'
+          import struct, sys
+          ico = open(sys.argv[1], "rb").read(); exe = open(sys.argv[2], "rb").read()
+          n = struct.unpack("<HHH", ico[:6])[2]
+          print(sum(ico[o:o + s] in exe for s, o in (struct.unpack("<II", ico[14 + 16 * i:22 + 16 * i]) for i in range(n))), n)
+          '@
+          $py | Set-Content icon_check.py
+          $r = (python icon_check.py src\matix\brand\assets\flutter\windows\runner\resources\app_icon.ico "$dir\MatixBridge.exe").Trim().Split(' ')
+          Write-Host "     Matix icon images found in MatixBridge.exe: $($r[0]) of $($r[1])"
+          Check "MatixBridge.exe has the Matix icon" ($r[0] -eq $r[1] -and [int]$r[1] -gt 0)
           if ($fail.Count) { Get-Content msi.log -Tail 30; throw "Failed: $($fail -join ', ')" }
 
   macos-dmg:
