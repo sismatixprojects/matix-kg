@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatixBridge — برنامج الدعم الفني والتحكم عن بُعد | Matix</title>
+<meta name="description" content="MatixBridge برنامج التحكم بالكمبيوتر عن بُعد من Matix للدعم الفني: سريع، مشفّر، بدون تثبيت. حمّله مجاناً لـ Windows و macOS.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://matixerp.com/matixbridge/">
+<link rel="alternate" hreflang="ar" href="https://matixerp.com/matixbridge/">
+<link rel="alternate" hreflang="x-default" href="https://matixerp.com/matixbridge/">
+<meta property="og:site_name" content="Matix ERP">
+<meta property="og:title" content="MatixBridge — الدعم الفني عن بُعد من Matix">
+<meta property="og:description" content="تحكّم بأي جهاز عن بُعد في ثوانٍ. مجاني لـ Windows و macOS.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://matixerp.com/matixbridge/">
+<meta property="og:image" content="https://matixerp.com/logo-w.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/matixbridge/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800;900&amp;family=Sora:wght@400;600;700;800&amp;display=swap">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MatixBridge","operatingSystem":"Windows, macOS","applicationCategory":"UtilitiesApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"Sismatix Information Systems","url":"https://matixerp.com/"},"downloadUrl":"https://matixerp.com/matixbridge/#download","softwareVersion":"1.5.3"}
+</script>
+<style>
+:root{
+  --bg:#030b14;--bg2:#060f1e;--bg3:#091526;--panel:#0c1d36;
+  --border:rgba(34,211,238,.1);--border2:rgba(34,211,238,.28);
+  --accent:#06b6d4;--accent2:#22d3ee;--glow:rgba(6,182,212,.4);
+  --text:#8fb3c8;--text2:#4d7a96;--white:#eef6fc;
+  --gold:#fbbf24;--green:#34d399;--purple:#a78bfa;--red:#f87171;
+  --ar:'Noto Kufi Arabic',sans-serif;--en:'Sora',sans-serif;
+  --radius:14px;--radius-lg:22px;
+  --win:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 4.6 10 3.5v7.8H2zm9-1.2L22 2v9.3H11zM2 12.6h8v7.9L2 19.4zm9 0h11V22l-11-1.5z'/%3E%3C/svg%3E");
+  --mac:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16.4 12.6c0-2.5 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.2zM14 5.2c.7-.9 1.2-2 1-3.2-1 .1-2.2.7-2.9 1.6-.6.7-1.2 1.9-1 3.1 1.1.1 2.2-.6 2.9-1.5z'/%3E%3C/svg%3E");
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px;overflow-x:hidden}
+body{background:var(--bg);color:var(--white);font-family:var(--ar);line-height:1.7;overflow-x:hidden;width:100%}
+html[lang="en"] body{font-family:var(--en)}
+a{text-decoration:none;color:inherit}
+img{max-width:100%;display:block}
+ul,ol{list-style:none}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent2);outline-offset:3px;border-radius:6px}
+.container{max-width:1200px;margin:0 auto;padding:0 2rem}
+.section{padding:5rem 0}
+.section-head{text-align:center;margin-bottom:2.6rem}
+.section-tag{display:inline-flex;align-items:center;gap:.5rem;background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.25);color:var(--accent2);font-size:.75rem;font-weight:700;letter-spacing:.04em;padding:.35rem 1rem;border-radius:999px;margin-bottom:1rem}
+.section-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.section-title{font-size:clamp(1.5rem,3vw,2.3rem);font-weight:900;line-height:1.35;margin-bottom:.7rem}
+.section-sub{color:var(--text);font-size:.98rem;max-width:640px;margin:0 auto}
+.grad{background:linear-gradient(135deg,var(--accent),var(--accent2),#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.reveal-on .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.reveal-on .reveal.visible{opacity:1;transform:none}
+
+/* ---------- OS icons ---------- */
+.os-ic{display:inline-block;width:46px;height:46px;background:var(--white);-webkit-mask:var(--win) center/contain no-repeat;mask:var(--win) center/contain no-repeat}
+.os-ic.mac{-webkit-mask-image:var(--mac);mask-image:var(--mac)}
+.os-ic.sm{width:20px;height:20px;flex:none}
+.os-ic.light{background:#fff}
+
+/* ---------- HERO ---------- */
+.mb-hero{position:relative;padding:9rem 0 5rem;overflow:hidden}
+.mb-glow{position:absolute;inset:0;background:
+  radial-gradient(700px 420px at 75% 30%,rgba(6,182,212,.18),transparent 65%),
+  radial-gradient(600px 400px at 15% 80%,rgba(129,140,248,.12),transparent 65%);pointer-events:none}
+.mb-hero::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.05) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);pointer-events:none}
+.mb-hero-inner{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr 1fr;gap:3.5rem;align-items:center}
+.mb-h1{font-size:clamp(2.1rem,5vw,3.6rem);font-weight:900;line-height:1.2;margin:.4rem 0 1.1rem;letter-spacing:-.01em}
+.mb-sub{color:var(--text);font-size:1.08rem;max-width:560px;margin-bottom:2rem}
+.mb-cta{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap}
+.mb-dl{display:inline-flex;align-items:center;gap:.9rem;background:linear-gradient(135deg,#06b6d4,#0284c7);color:#fff;border-radius:16px;padding:1rem 1.6rem;box-shadow:0 12px 34px rgba(6,182,212,.35),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .2s,box-shadow .2s}
+.mb-dl:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(6,182,212,.45),inset 0 1px 0 rgba(255,255,255,.25)}
+.mb-dl-ic{width:30px;height:30px;background:#fff;-webkit-mask:var(--win) center/contain no-repeat;mask:var(--win) center/contain no-repeat;flex:none}
+.mb-dl-ic.mac{-webkit-mask-image:var(--mac);mask-image:var(--mac)}
+.mb-dl-txt{display:flex;flex-direction:column;line-height:1.35}
+.mb-dl-txt b{font-size:1.12rem;font-weight:800}
+.mb-dl-txt small{font-size:.76rem;opacity:.85;font-weight:600}
+.mb-dl.small{padding:.8rem 1.4rem;border-radius:12px}
+.mb-dl.ghost{background:rgba(255,255,255,.06);border:1px solid var(--border2);box-shadow:none}
+.mb-alt{color:var(--accent2);font-weight:700;font-size:.92rem;border-bottom:1px dashed rgba(34,211,238,.4)}
+.mb-trust{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;margin-top:2rem;color:var(--text);font-size:.86rem;font-weight:600}
+.mb-trust li{display:flex;align-items:center;gap:.5rem}
+.ck{width:18px;height:18px;border-radius:50%;background:rgba(52,211,153,.15);position:relative;flex:none}
+.ck::after{content:"";position:absolute;inset:5px 4px 6px 5px;border:solid var(--green);border-width:0 0 2px 2px;transform:rotate(-45deg)}
+
+/* app mockup */
+.mb-visual{position:relative;min-height:420px;margin-bottom:60px}
+.mb-window{position:relative;background:linear-gradient(180deg,#0f2440,#0a1a30);border:1px solid var(--border2);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.03);overflow:hidden;transform:perspective(1400px) rotateY(-6deg) rotateX(2deg)}
+html[dir="ltr"] .mb-window{transform:perspective(1400px) rotateY(6deg) rotateX(2deg)}
+.mb-titlebar{display:flex;align-items:center;gap:.45rem;padding:.75rem 1rem;background:rgba(0,0,0,.25);border-bottom:1px solid var(--border);direction:ltr}
+.mb-titlebar i{width:11px;height:11px;border-radius:50%;background:#f87171}
+.mb-titlebar i:nth-child(2){background:#fbbf24}.mb-titlebar i:nth-child(3){background:#34d399}
+.mb-titlebar span{margin-inline-start:auto;margin-inline-end:auto;font-family:var(--en);font-size:.78rem;color:var(--text);font-weight:600}
+.mb-app{display:grid;grid-template-columns:76px 1fr;min-height:330px}
+.mb-app-side{background:rgba(0,0,0,.18);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:1rem;padding:1.1rem 0}
+.mb-side-item{width:34px;height:8px;border-radius:4px;background:rgba(143,179,200,.18)}
+.mb-side-item.on{background:var(--accent)}
+.mb-app-main{padding:1.8rem 2rem}
+.mb-label{font-size:.78rem;color:var(--text);font-weight:700;margin-bottom:.35rem}
+.mb-id{font-family:var(--en);font-size:clamp(1.7rem,3.2vw,2.5rem);font-weight:800;letter-spacing:.06em;direction:ltr;text-align:start;margin-bottom:1.3rem;color:var(--white)}
+html[dir="rtl"] .mb-id,html[dir="rtl"] .mb-pass{text-align:right}
+.mb-pass{font-family:var(--en);font-size:1.15rem;font-weight:700;letter-spacing:.12em;color:var(--accent2);direction:ltr;margin-bottom:1.6rem}
+.mb-status{display:inline-flex;align-items:center;gap:.55rem;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);color:#a7f3d0;font-size:.8rem;font-weight:700;padding:.45rem .9rem;border-radius:999px}
+.live{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 1.8s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.6)}70%{box-shadow:0 0 0 10px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+.mb-request{position:absolute;bottom:-70px;inset-inline-start:-40px;width:250px;background:#0d2038;border:1px solid var(--border2);border-radius:16px;padding:1rem;box-shadow:0 24px 60px rgba(0,0,0,.6);animation:float 6s ease-in-out infinite}
+.mb-req-head{display:flex;align-items:center;gap:.7rem;margin-bottom:.8rem}
+.mb-req-head b{display:block;font-size:.88rem}
+.mb-req-head small{display:block;font-size:.72rem;color:var(--text)}
+.mb-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#06b6d4,#818cf8);display:grid;place-items:center;font-family:var(--en);font-weight:800}
+.mb-req-perms{display:flex;gap:.4rem;margin-bottom:.8rem}
+.mb-req-perms span{flex:1;text-align:center;background:rgba(255,255,255,.05);border-radius:8px;padding:.3rem 0;font-size:.85rem}
+.mb-req-btns{display:flex;gap:.5rem}
+.mb-req-btns span{flex:1;text-align:center;border-radius:9px;padding:.45rem 0;font-size:.8rem;font-weight:800}
+.mb-req-btns .ok{background:var(--green);color:#03271b}
+.mb-req-btns .no{background:rgba(248,113,113,.12);color:#fecaca;border:1px solid rgba(248,113,113,.3)}
+.mb-chip{position:absolute;top:-16px;inset-inline-end:18px;display:flex;align-items:center;gap:.5rem;background:#0d2038;border:1px solid var(--border2);border-radius:999px;padding:.45rem .95rem;font-size:.78rem;font-weight:700;color:var(--accent2);box-shadow:0 14px 34px rgba(0,0,0,.5);animation:float 7s ease-in-out infinite reverse}
+.lock{width:12px;height:12px;border:2px solid var(--accent2);border-radius:3px;position:relative;top:2px}
+.lock::before{content:"";position:absolute;width:8px;height:7px;border:2px solid var(--accent2);border-bottom:0;border-radius:5px 5px 0 0;left:0;top:-8px}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* ---------- STATS ---------- */
+.mb-stats{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(12,29,54,.5),rgba(6,15,30,.5))}
+.mb-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;padding-top:2.2rem;padding-bottom:2.2rem;text-align:center}
+.mb-stats-grid b{display:block;font-family:var(--en);font-size:1.45rem;font-weight:800;color:var(--white);margin-bottom:.2rem}
+html[lang="ar"] .mb-stats-grid b{font-family:var(--ar)}
+.mb-stats-grid span{font-size:.82rem;color:var(--text)}
+
+/* ---------- STEPS ---------- */
+.mb-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;position:relative}
+.mb-step{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 1.7rem;position:relative;transition:border-color .25s,transform .25s}
+.mb-step:hover{border-color:var(--border2);transform:translateY(-3px)}
+.mb-step .n{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#06b6d4,#0284c7);font-family:var(--en);font-weight:800;font-size:1.2rem;margin-bottom:1.1rem;box-shadow:0 10px 24px rgba(6,182,212,.3)}
+.mb-step h3{font-size:1.12rem;font-weight:800;margin-bottom:.45rem}
+.mb-step p{color:var(--text);font-size:.9rem}
+
+/* ---------- FEATURES ---------- */
+.mb-feat-sec{background:linear-gradient(180deg,transparent,rgba(12,29,54,.35),transparent)}
+.mb-feats{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1rem}
+.mb-feat{background:rgba(12,29,54,.6);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.3rem;transition:all .25s}
+.mb-feat:hover{border-color:var(--border2);background:rgba(12,29,54,.9)}
+.mb-feat .ic{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.2);font-size:1.25rem;margin-bottom:.9rem}
+.mb-feat h3{font-size:.98rem;font-weight:800;margin-bottom:.35rem}
+.mb-feat p{font-size:.84rem;color:var(--text);line-height:1.75}
+
+/* ---------- DOWNLOAD ---------- */
+.mb-dl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,380px));justify-content:center;gap:1.5rem}
+.mb-dl-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.2rem 1.8rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.6rem;transition:border-color .25s,box-shadow .25s}
+.mb-dl-card.suggested{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 20px 50px rgba(6,182,212,.15)}
+.mb-dl-card h3{font-family:var(--en);font-size:1.4rem;font-weight:800;margin-top:.4rem}
+.mb-dl-card p{color:var(--text);font-size:.85rem;margin-bottom:.6rem}
+.mb-mini{font-size:.76rem;color:var(--text2);margin-top:.4rem}
+a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
+.mb-help{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:2.4rem}
+.mb-help-col{background:rgba(12,29,54,.45);border:1px dashed var(--border2);border-radius:var(--radius);padding:1.4rem 1.6rem}
+.mb-help-col h4{display:flex;align-items:center;gap:.6rem;font-size:.98rem;margin-bottom:.8rem}
+.mb-help-col ol{counter-reset:s}
+.mb-help-col li{counter-increment:s;position:relative;padding-inline-start:2rem;color:var(--text);font-size:.87rem;margin-bottom:.55rem}
+.mb-help-col li::before{content:counter(s);position:absolute;inset-inline-start:0;top:.1rem;width:1.35rem;height:1.35rem;border-radius:50%;background:rgba(14,165,233,.15);color:var(--accent2);font-size:.72rem;font-weight:800;display:grid;place-items:center;font-family:var(--en)}
+.mb-help-col b{color:var(--white)}
+
+/* ---------- SECURITY ---------- */
+.mb-sec-inner{display:flex;align-items:center;gap:2.5rem;background:linear-gradient(135deg,rgba(6,182,212,.1),rgba(129,140,248,.08));border:1px solid var(--border2);border-radius:28px;padding:2.8rem 3rem}
+.mb-shield{flex:none;width:96px;height:110px;background:linear-gradient(160deg,#22d3ee,#0284c7);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Cpath d='M12 0 24 4.5v8.3C24 20.1 18.9 25.9 12 28 5.1 25.9 0 20.1 0 12.8V4.5zm-1.6 17.6 7.4-7.4-1.9-1.9-5.5 5.5-2.8-2.8-1.9 1.9z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Cpath d='M12 0 24 4.5v8.3C24 20.1 18.9 25.9 12 28 5.1 25.9 0 20.1 0 12.8V4.5zm-1.6 17.6 7.4-7.4-1.9-1.9-5.5 5.5-2.8-2.8-1.9 1.9z'/%3E%3C/svg%3E") center/contain no-repeat;filter:drop-shadow(0 10px 30px rgba(6,182,212,.4))}
+.mb-sec .section-title{margin-bottom:.5rem}
+.section-sub.mb-left{margin:0;max-width:none}
+
+/* ---------- FAQ ---------- */
+.mb-faq{max-width:820px}
+.mb-faq details{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:.8rem;transition:border-color .25s}
+.mb-faq details[open]{border-color:var(--border2)}
+.mb-faq summary{cursor:pointer;list-style:none;padding:1.1rem 1.4rem;font-weight:800;font-size:.97rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.mb-faq summary::-webkit-details-marker{display:none}
+.mb-faq summary::after{content:"+";font-family:var(--en);font-size:1.4rem;color:var(--accent2);transition:transform .25s;flex:none}
+.mb-faq details[open] summary::after{transform:rotate(45deg)}
+.mb-faq details p{padding:0 1.4rem 1.2rem;color:var(--text);font-size:.9rem}
+
+/* ---------- FINAL CTA ---------- */
+.mb-final{text-align:center}
+.mb-final .container{background:radial-gradient(500px 220px at 50% 0,rgba(6,182,212,.22),transparent 70%),var(--bg2);border:1px solid var(--border2);border-radius:30px;padding:3.5rem 2rem}
+.mb-final-t{font-size:clamp(1.6rem,3.4vw,2.5rem);font-weight:900;margin-bottom:.6rem}
+.mb-final-btns{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin:1.8rem 0 1.4rem}
+.mb-agent{color:var(--text2);font-size:.85rem}
+.mb-agent a{color:var(--accent2);font-weight:700}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:1000px){
+  .mb-hero-inner{grid-template-columns:1fr;gap:4rem}
+  .mb-hero-copy{text-align:center}
+  .mb-sub{margin-inline:auto}
+  .mb-cta,.mb-trust{justify-content:center}
+  .mb-visual{max-width:560px;margin:0 auto;width:100%}
+  .mb-feats{grid-template-columns:repeat(2,1fr)}
+  .mb-stats-grid{grid-template-columns:repeat(2,1fr);row-gap:1.6rem}
+}
+@media(max-width:700px){
+  .container{padding:0 1rem}
+  .section{padding:3.5rem 0}
+  .mb-hero{padding:7rem 0 3.5rem}
+  .mb-steps,.mb-help,.mb-dl-grid{grid-template-columns:1fr}
+  .mb-feats{grid-template-columns:1fr}
+  .mb-sec-inner{flex-direction:column;text-align:center;padding:2rem 1.4rem}
+  .mb-request{inset-inline-start:0;width:220px;bottom:-80px}
+  .mb-app{grid-template-columns:56px 1fr}
+  .mb-app-main{padding:1.4rem 1.2rem}
+  .mb-window{transform:none!important}
+}
+@media(prefers-reduced-motion:reduce){.mb-request,.mb-chip,.live{animation:none}}
+</style>
+<script>
+(function(){
+  var d=document.documentElement;
+  if(!('IntersectionObserver' in window)||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  d.classList.add('reveal-on');
+  function showAll(){document.querySelectorAll('.reveal').forEach(function(e){e.classList.add('visible')})}
+  document.addEventListener('DOMContentLoaded',function(){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target)}})},{rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.reveal').forEach(function(e){io.observe(e)});
+    setTimeout(showAll,2500);
+  });
+})();
+</script>
+</head>
+<body>
+<div id="matix-header-mount">
+<header id="site-header">
+  <div class="header-inner">
+    <a href="https://matixerp.com/" class="logo">
+      <img src="/logo-w.png?v=7" alt="MatixERP" class="logo-img" style="height:44px;width:auto;display:block">
+    </a>
+    <nav class="main-nav" id="mainNav">
+      <a href="https://matixerp.com/#modules" data-i18n="nav_modules">الوحدات</a>
+      <a href="https://matixerp.com/#industries" data-i18n="nav_industries">القطاعات</a>
+      <a href="https://matixerp.com/#marketing" data-i18n="nav_marketing">أدوات التسويق</a>
+      <a href="https://matixerp.com/#einvoice" data-i18n="nav_einv">الفوترة الإلكترونية</a>
+      <a href="https://matixerp.com/customers/clients.html" data-kw-hide data-i18n="nav_clients">العملاء</a>
+      <a href="https://matixerp.com/pricing/" data-i18n="nav_pricing">الأسعار</a>
+      <a href="https://matixerp.com/#contact-form" data-i18n="nav_contact">تواصل معنا</a>
+    </nav>
+    <div class="header-actions">
+      <button class="lang-btn" id="langToggle" onclick="toggleLang()">EN</button>
+      <a href="https://app.matix.one/login" class="login-btn" data-i18n="nav_login">دخول</a>
+      <a href="https://matixerp.com/demo/" class="demo-btn-nav" data-i18n="nav_demo">جرّب ماتكس</a>
+      <div class="menu-toggle" id="menuToggle" onclick="toggleMenu()">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+</header>
+</div>
+<main id="main-content">
+
+<!-- ================= HERO ================= -->
+<section class="mb-hero" id="home">
+  <div class="mb-glow"></div>
+  <div class="container mb-hero-inner">
+    <div class="mb-hero-copy">
+      <span class="section-tag"><span class="dot"></span><span data-i18n="tag">جديد من Matix · أداة الدعم عن بُعد</span></span>
+      <h1 class="mb-h1" data-i18n="h1">تحكّم بأي جهاز<br>عن بُعد <span class="grad">في ثوانٍ.</span></h1>
+      <p class="mb-sub" data-i18n="sub">MatixBridge أداة الدعم الفني عن بُعد من Matix. شغّل البرنامج، أعطِ فريق الدعم رقم جهازك، وشاهد المشكلة تُحَل أمامك على الشاشة. بدون تثبيت وبدون إعدادات.</p>
+
+      <div class="mb-cta">
+        <a class="mb-dl" id="dlPrimary" href="/matixbridge/download/MatixBridge-Windows.exe" download>
+          <span class="mb-dl-ic" id="dlIcon"></span>
+          <span class="mb-dl-txt">
+            <b id="dlLabel" data-i18n="dl_win">تحميل لـ Windows</b>
+            <small id="dlMeta" data-i18n="dl_win_meta">مجاني · الإصدار 1.5.3 · 25 م.ب</small>
+          </span>
+        </a>
+        <a class="mb-alt" id="dlAlt" href="#download" data-i18n="dl_alt_mac">متوفر أيضاً لـ macOS</a>
+      </div>
+
+      <ul class="mb-trust">
+        <li><span class="ck"></span><span data-i18n="tr1">اتصال مشفّر بالكامل</span></li>
+        <li><span class="ck"></span><span data-i18n="tr2">بدون تثبيت</span></li>
+        <li><span class="ck"></span><span data-i18n="tr3">لا دخول بدون موافقتك</span></li>
+      </ul>
+    </div>
+
+    <!-- App mockup -->
+    <div class="mb-visual" aria-hidden="true">
+      <div class="mb-window">
+        <div class="mb-titlebar"><i></i><i></i><i></i><span>MatixBridge</span></div>
+        <div class="mb-app">
+          <div class="mb-app-side">
+            <img src="/matixbridge/icon.svg" alt="" width="44" height="44">
+            <div class="mb-side-item on"></div><div class="mb-side-item"></div><div class="mb-side-item"></div>
+          </div>
+          <div class="mb-app-main">
+            <div class="mb-label" data-i18n="m_yourid">رقم جهازك</div>
+            <div class="mb-id">1 465 118 012</div>
+            <div class="mb-label" data-i18n="m_pass">كلمة المرور المؤقتة</div>
+            <div class="mb-pass">7kq2 · m9xa</div>
+            <div class="mb-status"><span class="live"></span><span data-i18n="m_ready">جاهز للاتصال · خوادم Matix</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-request">
+        <div class="mb-req-head">
+          <span class="mb-avatar">M</span>
+          <div><b data-i18n="m_req_t">طلب اتصال</b><small data-i18n="m_req_from">فريق دعم Matix · أحمد</small></div>
+        </div>
+        <div class="mb-req-perms"><span>🖥️</span><span>⌨️</span><span>📁</span><span>💬</span></div>
+        <div class="mb-req-btns"><span class="ok" data-i18n="m_accept">قبول</span><span class="no" data-i18n="m_decline">رفض</span></div>
+      </div>
+      <div class="mb-chip"><span class="lock"></span><span data-i18n="m_enc">جلسة مشفّرة</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STATS ================= -->
+<section class="mb-stats">
+  <div class="container mb-stats-grid">
+    <div class="reveal"><b data-i18n="s1_n">ثوانٍ</b><span data-i18n="s1_t">من فتح البرنامج حتى بدء الجلسة</span></div>
+    <div class="reveal"><b dir="ltr">25 MB</b><span data-i18n="s2_t">برنامج خفيف يعمل فوراً بدون تثبيت</span></div>
+    <div class="reveal"><b dir="ltr">Windows · macOS</b><span data-i18n="s3_t">نفس التجربة على أجهزة الكمبيوتر</span></div>
+    <div class="reveal"><b dir="ltr">+6,000</b><span data-i18n="s4_t">شركة تثق في حلول Matix</span></div>
+  </div>
+</section>
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag" data-i18n="how_tag">كيف يعمل</span>
+      <h2 class="section-title" data-i18n="how_title">ثلاث خطوات، <span class="grad">والمشكلة محلولة</span></h2>
+      <p class="section-sub" data-i18n="how_sub">لا تحتاج أي خبرة تقنية. فريق الدعم يتولّى الباقي.</p>
+    </div>
+    <div class="mb-steps">
+      <div class="mb-step reveal"><span class="n">1</span><h3 data-i18n="st1_t">حمّل وشغّل</h3><p data-i18n="st1_p">حمّل MatixBridge وافتحه مباشرة. لا يحتاج تثبيتاً ولا صلاحيات خاصة.</p></div>
+      <div class="mb-step reveal"><span class="n">2</span><h3 data-i18n="st2_t">أعطِ رقم جهازك</h3><p data-i18n="st2_p">يظهر رقم جهازك في البرنامج. اقرأه لموظف الدعم على الهاتف أو في التذكرة.</p></div>
+      <div class="mb-step reveal"><span class="n">3</span><h3 data-i18n="st3_t">وافق وشاهد الحل</h3><p data-i18n="st3_p">اضغط «قبول» عند طلب الاتصال، وتابع ما يفعله فريق الدعم على شاشتك. يمكنك إنهاء الجلسة في أي لحظة.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+<section class="section mb-feat-sec" id="features">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag" data-i18n="ft_tag">المميزات</span>
+      <h2 class="section-title" data-i18n="ft_title">كل ما يحتاجه <span class="grad">الدعم الفني عن بُعد</span></h2>
+    </div>
+    <div class="mb-feats">
+      <div class="mb-feat reveal"><span class="ic">⚡</span><h3 data-i18n="f1_t">سريع وخفيف</h3><p data-i18n="f1_p">صورة سلسة للشاشة بتقنيات ضغط حديثة، حتى على الاتصالات العادية.</p></div>
+      <div class="mb-feat reveal"><span class="ic">🔒</span><h3 data-i18n="f2_t">آمن ومشفّر</h3><p data-i18n="f2_p">كل جلسة مشفّرة من طرف لطرف، ويرفض البرنامج أي اتصال لا يمكن التحقق من هويته.</p></div>
+      <div class="mb-feat reveal"><span class="ic">✋</span><h3 data-i18n="f3_t">أنت صاحب القرار</h3><p data-i18n="f3_p">لا يتم الدخول لجهازك إلا بموافقتك أو بكلمة المرور التي تعطيها، وتنهي الجلسة متى شئت.</p></div>
+      <div class="mb-feat reveal"><span class="ic">📁</span><h3 data-i18n="f4_t">نقل الملفات</h3><p data-i18n="f4_p">إرسال واستقبال الملفات بين جهازك وفريق الدعم أثناء الجلسة.</p></div>
+      <div class="mb-feat reveal"><span class="ic">💬</span><h3 data-i18n="f5_t">دردشة فورية</h3><p data-i18n="f5_p">تواصل كتابياً مع موظف الدعم داخل الجلسة نفسها.</p></div>
+      <div class="mb-feat reveal"><span class="ic">🎥</span><h3 data-i18n="f6_t">تسجيل الجلسات</h3><p data-i18n="f6_p">يمكن لفريق الدعم تسجيل الجلسة للمراجعة، ويظهر لك تنبيه بأن التسجيل يعمل.</p></div>
+      <div class="mb-feat reveal"><span class="ic">🖥️</span><h3 data-i18n="f7_t">شاشات متعددة</h3><p data-i18n="f7_p">التنقل بين الشاشات والتحكم الكامل بالماوس ولوحة المفاتيح.</p></div>
+      <div class="mb-feat reveal"><span class="ic">🏢</span><h3 data-i18n="f8_t">خوادم Matix الخاصة</h3><p data-i18n="f8_p">الاتصال يمر عبر خوادم Matix وليس عبر طرف ثالث.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DOWNLOAD ================= -->
+<section class="section" id="download">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag" data-i18n="dl_tag">التحميل</span>
+      <h2 class="section-title" data-i18n="dl_title">حمّل <span class="grad">MatixBridge</span> مجاناً</h2>
+      <p class="section-sub" data-i18n="dl_sub">اختر نظام التشغيل الخاص بجهازك.</p>
+    </div>
+    <div class="mb-dl-grid">
+      <div class="mb-dl-card reveal" id="cardWin">
+        <span class="os-ic win"></span>
+        <h3>Windows</h3>
+        <p data-i18n="win_req">Windows 7 أو أحدث · 64-بت</p>
+        <a class="mb-dl small" href="/matixbridge/download/MatixBridge-Windows.exe" download><span class="mb-dl-txt"><b data-i18n="dl_btn">تحميل</b><small dir="ltr">.exe · 25 MB</small></span></a>
+        <a class="mb-mini" href="/matixbridge/download/MatixBridge-Windows-Installer.msi" download data-i18n="win_msi">أو نسخة التثبيت للشركات (.msi)</a>
+      </div>
+      <div class="mb-dl-card reveal" id="cardMac">
+        <span class="os-ic mac"></span>
+        <h3>macOS</h3>
+        <p data-i18n="mac_req">macOS 10.14 أو أحدث · Intel و Apple Silicon</p>
+        <a class="mb-dl small" href="/matixbridge/download/MatixBridge-macOS.dmg" download><span class="mb-dl-txt"><b data-i18n="dl_btn">تحميل</b><small dir="ltr">.dmg · 36 MB</small></span></a>
+        <span class="mb-mini" data-i18n="mac_note">على أجهزة Apple Silicon يطلب النظام تثبيت Rosetta تلقائياً.</span>
+      </div>
+    </div>
+
+    <!-- First-run help -->
+    <div class="mb-help reveal">
+      <div class="mb-help-col">
+        <h4><span class="os-ic win sm"></span><span data-i18n="hw_t">أول تشغيل على Windows</span></h4>
+        <ol>
+          <li data-i18n="hw1">افتح ملف MatixBridge الذي تم تحميله.</li>
+          <li data-i18n="hw2">إذا ظهرت رسالة «Windows protected your PC» اضغط <b>More info</b> ثم <b>Run anyway</b>.</li>
+          <li data-i18n="hw3">سيظهر رقم جهازك. أعطِه لفريق الدعم.</li>
+        </ol>
+      </div>
+      <div class="mb-help-col">
+        <h4><span class="os-ic mac sm"></span><span data-i18n="hm_t">أول تشغيل على macOS</span></h4>
+        <ol>
+          <li data-i18n="hm1">افتح ملف .dmg واسحب MatixBridge إلى مجلد Applications.</li>
+          <li data-i18n="hm2">إذا منع النظام فتحه: الإعدادات ← الخصوصية والأمان ← <b>فتح على أي حال</b>.</li>
+          <li data-i18n="hm3">اسمح بصلاحيتي <b>تسجيل الشاشة</b> و<b>تسهيلات الاستخدام</b> حتى يرى فريق الدعم شاشتك ويتحكم بها.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SECURITY BAND ================= -->
+<section class="section mb-sec">
+  <div class="container mb-sec-inner reveal">
+    <div class="mb-shield" aria-hidden="true"></div>
+    <div>
+      <h2 class="section-title" data-i18n="sec_t">خصوصيتك أولاً</h2>
+      <p class="section-sub mb-left" data-i18n="sec_p">MatixBridge لا يعمل في الخلفية ولا يسمح بالدخول غير المراقب. كل جلسة تبدأ بموافقتك، تراها لحظة بلحظة، وتنتهي بضغطة زر. الاتصال مشفّر بالكامل ويمر عبر خوادم Matix فقط.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="section" id="faq">
+  <div class="container mb-faq">
+    <div class="section-head reveal">
+      <span class="section-tag" data-i18n="faq_tag">الأسئلة الشائعة</span>
+      <h2 class="section-title" data-i18n="faq_title">أسئلة <span class="grad">متكررة</span></h2>
+    </div>
+    <details class="reveal"><summary data-i18n="q1">هل MatixBridge مجاني؟</summary><p data-i18n="a1">نعم. البرنامج مجاني لعملاء Matix، ويُستخدم للتواصل مع فريق الدعم الفني.</p></details>
+    <details class="reveal"><summary data-i18n="q2">هل يحتاج البرنامج تثبيتاً؟</summary><p data-i18n="a2">لا. على Windows يعمل الملف مباشرة. على macOS تسحب التطبيق إلى مجلد Applications فقط.</p></details>
+    <details class="reveal"><summary data-i18n="q3">هل يستطيع فريق الدعم الدخول إلى جهازي في أي وقت؟</summary><p data-i18n="a3">لا. الدخول يتطلب أن يكون البرنامج مفتوحاً، وأن توافق على الطلب أو تعطي كلمة المرور بنفسك. أغلق البرنامج ولن يتمكن أحد من الاتصال.</p></details>
+    <details class="reveal"><summary data-i18n="q4">كيف أنهي الجلسة؟</summary><p data-i18n="a4">اضغط «قطع الاتصال» في نافذة MatixBridge أو أغلق البرنامج، وتنتهي الجلسة فوراً.</p></details>
+    <details class="reveal"><summary data-i18n="q5">لماذا يطلب macOS صلاحية تسجيل الشاشة؟</summary><p data-i18n="a5">حتى يتمكن فريق الدعم من رؤية شاشتك. صلاحية تسهيلات الاستخدام تسمح له بتحريك الماوس والكتابة. يمكنك إلغاء الصلاحيتين في أي وقت من إعدادات النظام.</p></details>
+  </div>
+</section>
+
+<!-- ================= FINAL CTA ================= -->
+<section class="section mb-final">
+  <div class="container reveal">
+    <h2 class="mb-final-t" data-i18n="fin_t">جاهز للحصول على المساعدة؟</h2>
+    <p class="section-sub" data-i18n="fin_p">حمّل MatixBridge الآن وتواصل مع فريق دعم Matix.</p>
+    <div class="mb-final-btns">
+      <a class="mb-dl" href="/matixbridge/download/MatixBridge-Windows.exe" download><span class="os-ic win sm light"></span><span class="mb-dl-txt"><b>Windows</b></span></a>
+      <a class="mb-dl ghost" href="/matixbridge/download/MatixBridge-macOS.dmg" download><span class="os-ic mac sm light"></span><span class="mb-dl-txt"><b>macOS</b></span></a>
+    </div>
+    <p class="mb-agent"><span data-i18n="agent_q">من فريق الدعم؟</span> <a href="https://bridge.matix.one/web/" data-i18n="agent_a">افتح لوحة الاتصال ←</a></p>
+  </div>
+</section>
+
+</main>
+<div id="matix-footer-mount">
+<div id="matix-testimonials-widget"></div>
+<footer id="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="https://matixerp.com/" class="logo">
+          <img src="/logo-w.png?v=7" alt="MatixERP" style="height:36px;width:auto;display:block">
+        </a>
+        <p data-i18n="footer_desc">منصة ERP متكاملة مدعومة بالذكاء الاصطناعي، تخدم أكثر من 6,000 شركة في الخليج والشرق الأوسط منذ 1996.</p>
+        <div class="footer-social">
+          <a href="https://www.facebook.com/MatixERPSys" target="_blank" rel="noopener" title="Facebook">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </a>
+          <a href="https://www.youtube.com/channel/UCfhfmc8FA3pGHvOtDD8iBHg" target="_blank" rel="noopener" title="YouTube">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+          </a>
+          <a href="https://web.whatsapp.com/send?phone=96567087771" target="_blank" rel="noopener" title="WhatsApp">
+            <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor"><path d="M16 2C8.28 2 2 8.28 2 16c0 2.47.65 4.78 1.77 6.78L2 30l5.42-1.7A13.94 13.94 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot_prod">المنتجات</h4>
+        <ul>
+          <li><a href="https://matixerp.com/#modules" data-i18n="foot_erp">Matix ERP</a></li>
+          <li><a href="https://matixerp.com/pos/" data-i18n="foot_pos">Matix POS</a></li>
+          <li><a href="https://sismatix.com/matix-hr/" data-i18n="foot_hr">MatixHR</a></li>
+          <li><a href="https://matixerp.com/matix-souq/" data-i18n="foot_souq">ماتكس سوق</a></li>
+          <li><a href="https://matixerp.com/ai-bot/" data-i18n="foot_mkt">أدوات التسويق</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot_sect">القطاعات</h4>
+        <ul>
+          <li><a href="https://matixerp.com/construction/" data-i18n="foot_constr">المقاولات</a></li>
+          <li><a href="https://matixerp.com/retail/" data-i18n="foot_retail">التجزئة</a></li>
+          <li><a href="https://matixerp.com/garage/" data-i18n="foot_garage">ورش السيارات</a></li>
+          <li><a href="https://matixerp.com/realestate/" data-i18n="foot_re">العقارات</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot_comp">الشركة</h4>
+        <ul>
+          <li><a href="https://sismatix.com/about/" data-i18n="foot_about">من نحن</a></li>
+          <li><a href="https://matixerp.com/customers/testimonials.html" data-kw-hide data-i18n="foot_testi">آراء العملاء</a></li>
+          <li><a href="https://matixerp.com/pricing/" data-i18n="foot_price">الأسعار</a></li>
+          <li><a href="https://matixerp.com/%d8%a7%d9%84%d9%85%d8%af%d9%88%d9%86%d8%a9/" data-i18n="foot_blog">المدونة</a></li>
+          <li><a href="https://matixerp.com/#contact-form" data-i18n="foot_contact">تواصل معنا</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p data-i18n="footer_copy">© 2026 Sismatix Information Systems. جميع الحقوق محفوظة.</p>
+      <div class="footer-badges">
+        <span class="f-badge">🇸🇦 ZATCA</span>
+        <span class="f-badge">🇪🇬 ETA</span>
+        <span class="f-badge">AI Powered</span>
+        <span class="f-badge">Since 1996</span>
+      </div>
+    </div>
+  </div>
+</footer>
+</div>
+<script>
+window.PAGE_T = {
+  tag:["جديد من Matix · أداة الدعم عن بُعد","New from Matix · Remote support tool"],
+  h1:["تحكّم بأي جهاز<br>عن بُعد <span class=\"grad\">في ثوانٍ.</span>","Remote control any computer<br><span class=\"grad\">in seconds.</span>"],
+  sub:["MatixBridge أداة الدعم الفني عن بُعد من Matix. شغّل البرنامج، أعطِ فريق الدعم رقم جهازك، وشاهد المشكلة تُحَل أمامك على الشاشة. بدون تثبيت وبدون إعدادات.","MatixBridge is Matix's remote support tool. Open the app, give our support team your ID, and watch the problem get fixed right on your screen. No installation, no setup."],
+  dl_win:["تحميل لـ Windows","Download for Windows"],
+  dl_mac:["تحميل لـ macOS","Download for macOS"],
+  dl_win_meta:["مجاني · الإصدار 1.5.3 · 25 م.ب","Free · Version 1.5.3 · 25 MB"],
+  dl_mac_meta:["مجاني · الإصدار 1.5.3 · 36 م.ب","Free · Version 1.5.3 · 36 MB"],
+  dl_alt_mac:["متوفر أيضاً لـ macOS","Also available for macOS"],
+  dl_alt_win:["متوفر أيضاً لـ Windows","Also available for Windows"],
+  dl_alt_all:["اختر نظام التشغيل","Choose your system"],
+  dl_any:["حمّل MatixBridge","Download MatixBridge"],
+  dl_any_meta:["مجاني · Windows و macOS","Free · Windows and macOS"],
+  tr1:["اتصال مشفّر بالكامل","Fully encrypted connection"],
+  tr2:["بدون تثبيت","No installation"],
+  tr3:["لا دخول بدون موافقتك","No access without your approval"],
+  m_yourid:["رقم جهازك","Your ID"],
+  m_pass:["كلمة المرور المؤقتة","One-time password"],
+  m_ready:["جاهز للاتصال · خوادم Matix","Ready to connect · Matix servers"],
+  m_req_t:["طلب اتصال","Connection request"],
+  m_req_from:["فريق دعم Matix · أحمد","Matix Support · Ahmed"],
+  m_accept:["قبول","Accept"],
+  m_decline:["رفض","Decline"],
+  m_enc:["جلسة مشفّرة","Encrypted session"],
+  s1_n:["ثوانٍ","Seconds"],
+  s1_t:["من فتح البرنامج حتى بدء الجلسة","from opening the app to a live session"],
+  s2_t:["برنامج خفيف يعمل فوراً بدون تثبيت","lightweight, runs instantly without installing"],
+  s3_t:["نفس التجربة على أجهزة الكمبيوتر","the same experience on every computer"],
+  s4_t:["شركة تثق في حلول Matix","companies trust Matix"],
+  how_tag:["كيف يعمل","How it works"],
+  how_title:["ثلاث خطوات، <span class=\"grad\">والمشكلة محلولة</span>","Three steps, <span class=\"grad\">problem solved</span>"],
+  how_sub:["لا تحتاج أي خبرة تقنية. فريق الدعم يتولّى الباقي.","No technical skills needed. Our support team handles the rest."],
+  st1_t:["حمّل وشغّل","Download and open"],
+  st1_p:["حمّل MatixBridge وافتحه مباشرة. لا يحتاج تثبيتاً ولا صلاحيات خاصة.","Download MatixBridge and open it. No installation or admin rights needed."],
+  st2_t:["أعطِ رقم جهازك","Share your ID"],
+  st2_p:["يظهر رقم جهازك في البرنامج. اقرأه لموظف الدعم على الهاتف أو في التذكرة.","Your ID appears in the app. Read it to the support agent on the phone or in your ticket."],
+  st3_t:["وافق وشاهد الحل","Accept and watch"],
+  st3_p:["اضغط «قبول» عند طلب الاتصال، وتابع ما يفعله فريق الدعم على شاشتك. يمكنك إنهاء الجلسة في أي لحظة.","Click “Accept” when the request appears and follow along on your screen. You can end the session at any moment."],
+  ft_tag:["المميزات","Features"],
+  ft_title:["كل ما يحتاجه <span class=\"grad\">الدعم الفني عن بُعد</span>","Everything <span class=\"grad\">remote support</span> needs"],
+  f1_t:["سريع وخفيف","Fast and light"],
+  f1_p:["صورة سلسة للشاشة بتقنيات ضغط حديثة، حتى على الاتصالات العادية.","Smooth screen streaming with modern video codecs, even on ordinary connections."],
+  f2_t:["آمن ومشفّر","Secure and encrypted"],
+  f2_p:["كل جلسة مشفّرة من طرف لطرف، ويرفض البرنامج أي اتصال لا يمكن التحقق من هويته.","Every session is end-to-end encrypted, and connections that can't be verified are refused."],
+  f3_t:["أنت صاحب القرار","You stay in control"],
+  f3_p:["لا يتم الدخول لجهازك إلا بموافقتك أو بكلمة المرور التي تعطيها، وتنهي الجلسة متى شئت.","Nobody gets in without your approval or the password you give, and you can end it anytime."],
+  f4_t:["نقل الملفات","File transfer"],
+  f4_p:["إرسال واستقبال الملفات بين جهازك وفريق الدعم أثناء الجلسة.","Send and receive files with the support team during the session."],
+  f5_t:["دردشة فورية","Live chat"],
+  f5_p:["تواصل كتابياً مع موظف الدعم داخل الجلسة نفسها.","Chat with the support agent inside the session."],
+  f6_t:["تسجيل الجلسات","Session recording"],
+  f6_p:["يمكن لفريق الدعم تسجيل الجلسة للمراجعة، ويظهر لك تنبيه بأن التسجيل يعمل.","Support can record sessions for review, and you are notified while recording is on."],
+  f7_t:["شاشات متعددة","Multiple screens"],
+  f7_p:["التنقل بين الشاشات والتحكم الكامل بالماوس ولوحة المفاتيح.","Switch between monitors with full mouse and keyboard control."],
+  f8_t:["خوادم Matix الخاصة","Matix's own servers"],
+  f8_p:["الاتصال يمر عبر خوادم Matix وليس عبر طرف ثالث.","Connections run through Matix servers, not a third party."],
+  dl_tag:["التحميل","Download"],
+  dl_title:["حمّل <span class=\"grad\">MatixBridge</span> مجاناً","Download <span class=\"grad\">MatixBridge</span> for free"],
+  dl_sub:["اختر نظام التشغيل الخاص بجهازك.","Choose your operating system."],
+  win_req:["Windows 7 أو أحدث · 64-بت","Windows 7 or later · 64-bit"],
+  mac_req:["macOS 10.14 أو أحدث · Intel و Apple Silicon","macOS 10.14 or later · Intel and Apple Silicon"],
+  dl_btn:["تحميل","Download"],
+  win_msi:["أو نسخة التثبيت للشركات (.msi)","or the installer for IT teams (.msi)"],
+  mac_note:["على أجهزة Apple Silicon يطلب النظام تثبيت Rosetta تلقائياً.","On Apple Silicon, macOS offers to install Rosetta automatically."],
+  hw_t:["أول تشغيل على Windows","First run on Windows"],
+  hw1:["افتح ملف MatixBridge الذي تم تحميله.","Open the downloaded MatixBridge file."],
+  hw2:["إذا ظهرت رسالة «Windows protected your PC» اضغط <b>More info</b> ثم <b>Run anyway</b>.","If “Windows protected your PC” appears, click <b>More info</b>, then <b>Run anyway</b>."],
+  hw3:["سيظهر رقم جهازك. أعطِه لفريق الدعم.","Your ID appears. Give it to the support team."],
+  hm_t:["أول تشغيل على macOS","First run on macOS"],
+  hm1:["افتح ملف .dmg واسحب MatixBridge إلى مجلد Applications.","Open the .dmg and drag MatixBridge into Applications."],
+  hm2:["إذا منع النظام فتحه: الإعدادات ← الخصوصية والأمان ← <b>فتح على أي حال</b>.","If macOS blocks it: System Settings → Privacy &amp; Security → <b>Open Anyway</b>."],
+  hm3:["اسمح بصلاحيتي <b>تسجيل الشاشة</b> و<b>تسهيلات الاستخدام</b> حتى يرى فريق الدعم شاشتك ويتحكم بها.","Allow <b>Screen Recording</b> and <b>Accessibility</b> so support can see and control your screen."],
+  sec_t:["خصوصيتك أولاً","Your privacy comes first"],
+  sec_p:["MatixBridge لا يعمل في الخلفية ولا يسمح بالدخول غير المراقب. كل جلسة تبدأ بموافقتك، تراها لحظة بلحظة، وتنتهي بضغطة زر. الاتصال مشفّر بالكامل ويمر عبر خوادم Matix فقط.","MatixBridge doesn't run in the background and doesn't allow unattended access. Every session starts with your approval, happens in front of you, and ends with one click. The connection is fully encrypted and runs only through Matix servers."],
+  faq_tag:["الأسئلة الشائعة","FAQ"],
+  faq_title:["أسئلة <span class=\"grad\">متكررة</span>","Frequently asked <span class=\"grad\">questions</span>"],
+  q1:["هل MatixBridge مجاني؟","Is MatixBridge free?"],
+  a1:["نعم. البرنامج مجاني لعملاء Matix، ويُستخدم للتواصل مع فريق الدعم الفني.","Yes. It's free for Matix customers and is used to get help from our support team."],
+  q2:["هل يحتاج البرنامج تثبيتاً؟","Do I need to install it?"],
+  a2:["لا. على Windows يعمل الملف مباشرة. على macOS تسحب التطبيق إلى مجلد Applications فقط.","No. On Windows the file runs directly. On macOS you just drag the app into Applications."],
+  q3:["هل يستطيع فريق الدعم الدخول إلى جهازي في أي وقت؟","Can support access my computer at any time?"],
+  a3:["لا. الدخول يتطلب أن يكون البرنامج مفتوحاً، وأن توافق على الطلب أو تعطي كلمة المرور بنفسك. أغلق البرنامج ولن يتمكن أحد من الاتصال.","No. The app must be open, and you must accept the request or give the password yourself. Close the app and nobody can connect."],
+  q4:["كيف أنهي الجلسة؟","How do I end a session?"],
+  a4:["اضغط «قطع الاتصال» في نافذة MatixBridge أو أغلق البرنامج، وتنتهي الجلسة فوراً.","Click “Disconnect” in the MatixBridge window or close the app; the session ends immediately."],
+  q5:["لماذا يطلب macOS صلاحية تسجيل الشاشة؟","Why does macOS ask for Screen Recording?"],
+  a5:["حتى يتمكن فريق الدعم من رؤية شاشتك. صلاحية تسهيلات الاستخدام تسمح له بتحريك الماوس والكتابة. يمكنك إلغاء الصلاحيتين في أي وقت من إعدادات النظام.","So support can see your screen. Accessibility lets them move the mouse and type. You can revoke both anytime in System Settings."],
+  fin_t:["جاهز للحصول على المساعدة؟","Ready to get help?"],
+  fin_p:["حمّل MatixBridge الآن وتواصل مع فريق دعم Matix.","Download MatixBridge now and connect with Matix support."],
+  agent_q:["من فريق الدعم؟","On the support team?"],
+  agent_a:["افتح لوحة الاتصال ←","Open the agent console →"]
+};
+
+/* Pick the right download for the visitor's computer (AnyDesk-style one-button download). */
+(function(){
+  var ua = navigator.userAgent || "";
+  var plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  var isMac = /Mac/i.test(plat) && !/iPhone|iPad|iPod/i.test(ua) && !(navigator.maxTouchPoints > 1);
+  var isWin = /Win/i.test(plat) || /Windows/i.test(ua);
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/i.test(plat) && navigator.maxTouchPoints > 1);
+  var lang = (localStorage.getItem('matix_lang') || 'ar') === 'en' ? 1 : 0;
+  function setKey(el, key){ if(!el) return; el.setAttribute('data-i18n', key); el.innerHTML = window.PAGE_T[key][lang]; }
+  var btn = document.getElementById('dlPrimary'), alt = document.getElementById('dlAlt');
+  var icon = document.getElementById('dlIcon');
+  icon.className = 'mb-dl-ic';
+  if (isMac) {
+    btn.href = '/matixbridge/download/MatixBridge-macOS.dmg';
+    icon.className = 'mb-dl-ic mac';
+    setKey(document.getElementById('dlLabel'), 'dl_mac');
+    setKey(document.getElementById('dlMeta'), 'dl_mac_meta');
+    setKey(alt, 'dl_alt_win');
+    document.getElementById('cardMac').classList.add('suggested');
+  } else if (isMobile) {
+    btn.href = '#download'; btn.removeAttribute('download');
+    setKey(document.getElementById('dlLabel'), 'dl_any');
+    setKey(document.getElementById('dlMeta'), 'dl_any_meta');
+    setKey(alt, 'dl_alt_all');
+  } else {
+    if (isWin) document.getElementById('cardWin').classList.add('suggested');
+  }
+})();
+</script>
+<script src="/contact-form.js"></script>
+<script src="/matix-shared.js?v=20"></script>
+</body>
+</html>
