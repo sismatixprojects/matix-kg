@@ -52,6 +52,14 @@ export interface SessionEvents {
   messageBox: (type: string, title: string, text: string) => void;
   fileResponse: (r: M.FileResponse) => void;
   fileAction: (a: M.FileAction) => void;
+  audioFormat: (sampleRate: number, channels: number) => void;
+  audio: (data: Uint8Array) => void;
+  /** Result of privacy mode / block input requests. */
+  notice: (kind: "privacy" | "block", state: number, details: string) => void;
+  /** Empty string = elevation succeeded, otherwise the error. */
+  elevation: (error: string) => void;
+  /** The customer's foreground window needs admin rights we don't have. */
+  needsElevation: () => void;
   closed: (reason: string) => void;
 }
 
@@ -303,6 +311,9 @@ export class Session {
       case "file_action":
         this.emit("fileAction", msg.file_action as M.FileAction);
         break;
+      case "audio_frame":
+        if (msg.audio_frame?.data?.length) this.emit("audio", msg.audio_frame.data);
+        break;
       case "misc":
         this.onMisc(msg.misc!);
         break;
@@ -333,7 +344,14 @@ export class Session {
   }
 
   private onMisc(misc: M.IMisc) {
-    if (misc.chat_message) this.emit("chat", misc.chat_message.text || "");
+    if (misc.audio_format) this.emit("audioFormat", misc.audio_format.sample_rate || 48000, misc.audio_format.channels || 2);
+    else if (misc.back_notification) {
+      const bn = misc.back_notification;
+      if (bn.privacy_mode_state != null) this.emit("notice", "privacy", bn.privacy_mode_state, bn.details || "");
+      else if (bn.block_input_state != null) this.emit("notice", "block", bn.block_input_state, bn.details || "");
+    } else if (misc.elevation_response != null) this.emit("elevation", misc.elevation_response);
+    else if (misc.uac || misc.foreground_window_elevated) this.emit("needsElevation");
+    else if (misc.chat_message) this.emit("chat", misc.chat_message.text || "");
     else if (misc.switch_display) this.emit("switchDisplay", misc.switch_display);
     else if (misc.permission_info) {
       const p = misc.permission_info;
@@ -390,6 +408,41 @@ export class Session {
         prefer: M.SupportedDecoding.PreferCodec.VP9,
       },
     };
+  }
+
+  /** Privacy-mode implementations the peer offers (Windows/macOS), first is the default. */
+  privacyModes(): string[] {
+    try {
+      const add = JSON.parse(this.peerInfo?.platform_additions || "{}");
+      const list = add.supported_privacy_mode_impl;
+      return Array.isArray(list) ? list.map((x: unknown) => (Array.isArray(x) ? String(x[0]) : String(x))).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  setPrivacyMode(on: boolean) {
+    const impl = this.privacyModes()[0] || "";
+    this.send({ misc: { toggle_privacy_mode: { impl_key: impl, on } } });
+  }
+
+  setBlockInput(on: boolean) {
+    const v = on ? M.OptionMessage.BoolOption.Yes : M.OptionMessage.BoolOption.No;
+    this.send({ misc: { option: { block_input: v } } });
+  }
+
+  setAudio(on: boolean) {
+    const v = on ? M.OptionMessage.BoolOption.No : M.OptionMessage.BoolOption.Yes;
+    this.send({ misc: { option: { disable_audio: v } } });
+  }
+
+  /** Asks the customer's Windows to run MatixBridge with admin rights (UAC prompt on their side). */
+  requestElevation() {
+    this.send({ misc: { elevation_request: { direct: true } } });
+  }
+
+  restartRemote() {
+    this.send({ misc: { restart_remote_device: true } });
   }
 
   videoReceived() {
