@@ -262,7 +262,7 @@ a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
       <p class="mb-sub" data-i18n="sub">MatixBridge أداة الدعم الفني عن بُعد من Matix. ثبّت البرنامج مرة واحدة، أعطِ فريق الدعم رقم جهازك، وشاهد المشكلة تُحَل أمامك على الشاشة.</p>
 
       <div class="mb-cta">
-        <a class="mb-dl" id="dlPrimary" href="/matixbridge/download/MatixBridge-Windows-Setup.msi?v=0.4" download>
+        <a class="mb-dl" id="dlPrimary" href="/matixbridge/download/MatixBridge-Windows-Setup.msi?v=0.5" download>
           <span class="mb-dl-ic" id="dlIcon"></span>
           <span class="mb-dl-txt">
             <b id="dlLabel" data-i18n="dl_win">تحميل لـ Windows</b>
@@ -369,15 +369,15 @@ a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
         <span class="os-ic win"></span>
         <h3>Windows</h3>
         <p data-i18n="win_req">Windows 7 أو أحدث · 64-بت</p>
-        <a class="mb-dl small" href="/matixbridge/download/MatixBridge-Windows-Setup.msi?v=0.4" download><span class="mb-dl-txt"><b data-i18n="dl_btn">تحميل</b><small dir="ltr">Setup · 25 MB</small></span></a>
-        <a class="mb-mini" href="/matixbridge/download/MatixBridge-Windows.exe?v=0.4" download data-i18n="win_msi">أو نسخة تعمل بدون تثبيت (.exe)</a>
+        <a class="mb-dl small" href="/matixbridge/download/MatixBridge-Windows-Setup.msi?v=0.5" download><span class="mb-dl-txt"><b data-i18n="dl_btn">تحميل</b><small dir="ltr">Setup · 25 MB</small></span></a>
+        <a class="mb-mini" href="/matixbridge/download/MatixBridge-Windows.exe?v=0.5" download data-i18n="win_msi">أو نسخة تعمل بدون تثبيت (.exe)</a>
       </div>
       <div class="mb-dl-card reveal" id="cardMac">
         <span class="os-ic mac"></span>
         <h3>macOS</h3>
         <p data-i18n="mac_req">macOS 12 أو أحدث</p>
-        <a class="mb-dl small" id="macMain" href="/matixbridge/download/MatixBridge-macOS.dmg?v=0.4" download><span class="mb-dl-txt"><b data-i18n="mac_arm">Apple Silicon (M1–M4)</b><small dir="ltr">.dmg · 30 MB</small></span></a>
-        <a class="mb-mini" id="macAlt" href="/matixbridge/download/MatixBridge-macOS-Intel.dmg?v=0.4" download data-i18n="mac_intel">جهاز Mac بمعالج Intel؟ حمّل هذه النسخة</a>
+        <a class="mb-dl small" id="macMain" href="/matixbridge/download/MatixBridge-macOS.dmg?v=0.5" download><span class="mb-dl-txt"><b data-i18n="mac_arm">Apple Silicon (M1–M4)</b><small dir="ltr">.dmg · 30 MB</small></span></a>
+        <a class="mb-mini" id="macAlt" href="/matixbridge/download/MatixBridge-macOS-Intel.dmg?v=0.5" download data-i18n="mac_intel">جهاز Mac بمعالج Intel؟ حمّل هذه النسخة</a>
       </div>
     </div>
 
@@ -435,8 +435,8 @@ a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
     <h2 class="mb-final-t" data-i18n="fin_t">جاهز للحصول على المساعدة؟</h2>
     <p class="section-sub" data-i18n="fin_p">حمّل MatixBridge الآن وتواصل مع فريق دعم Matix.</p>
     <div class="mb-final-btns">
-      <a class="mb-dl" href="/matixbridge/download/MatixBridge-Windows-Setup.msi?v=0.4" download><span class="os-ic win sm light"></span><span class="mb-dl-txt"><b>Windows</b></span></a>
-      <a class="mb-dl ghost" href="/matixbridge/download/MatixBridge-macOS.dmg?v=0.4" download><span class="os-ic mac sm light"></span><span class="mb-dl-txt"><b>macOS</b></span></a>
+      <a class="mb-dl" href="/matixbridge/download/MatixBridge-Windows-Setup.msi?v=0.5" download><span class="os-ic win sm light"></span><span class="mb-dl-txt"><b>Windows</b></span></a>
+      <a class="mb-dl ghost" href="/matixbridge/download/MatixBridge-macOS.dmg?v=0.5" download><span class="os-ic mac sm light"></span><span class="mb-dl-txt"><b>macOS</b></span></a>
     </div>
   </div>
 </section>
@@ -620,15 +620,15 @@ window.PAGE_T = {
     } catch (e) {}
   }
   if (isMac && macIntel) {
-    document.getElementById('macMain').href = '/matixbridge/download/MatixBridge-macOS-Intel.dmg?v=0.4';
+    document.getElementById('macMain').href = '/matixbridge/download/MatixBridge-macOS-Intel.dmg?v=0.5';
     document.getElementById('macMain').querySelector('b').removeAttribute('data-i18n');
     document.getElementById('macMain').querySelector('b').textContent = 'Intel';
-    document.getElementById('macAlt').href = '/matixbridge/download/MatixBridge-macOS.dmg?v=0.4';
+    document.getElementById('macAlt').href = '/matixbridge/download/MatixBridge-macOS.dmg?v=0.5';
     document.getElementById('macAlt').removeAttribute('data-i18n');
     document.getElementById('macAlt').textContent = 'Apple Silicon (M1–M4)';
   }
   if (isMac) {
-    btn.href = macIntel ? '/matixbridge/download/MatixBridge-macOS-Intel.dmg?v=0.4' : '/matixbridge/download/MatixBridge-macOS.dmg?v=0.4';
+    btn.href = macIntel ? '/matixbridge/download/MatixBridge-macOS-Intel.dmg?v=0.5' : '/matixbridge/download/MatixBridge-macOS.dmg?v=0.5';
     icon.className = 'mb-dl-ic mac';
     setKey(document.getElementById('dlLabel'), 'dl_mac');
     setKey(document.getElementById('dlMeta'), 'dl_mac_meta');
