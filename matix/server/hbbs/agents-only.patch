@@ -1,0 +1,44 @@
+diff --git a/src/rendezvous_server.rs b/src/rendezvous_server.rs
+index dff45eb..3e3d7be 100644
+--- a/src/rendezvous_server.rs
++++ b/src/rendezvous_server.rs
+@@ -40,6 +40,10 @@ use std::{
+     time::Instant,
+ };
+ 
++/// Shown by native apps that try to control a device: only the MatixBridge web client may.
++const MATIX_NATIVE_REFUSED: &str =
++    "Remote control is only available from bridge.matix.one. Sign in there with your Matix Agents account.";
++
+ #[derive(Clone, Debug)]
+ enum Data {
+     Msg(Box<RendezvousMessage>, SocketAddr),
+@@ -483,6 +487,17 @@ impl RendezvousServer {
+         if let Ok(msg_in) = RendezvousMessage::parse_from_bytes(bytes) {
+             match msg_in.union {
+                 Some(rendezvous_message::Union::PunchHoleRequest(ph)) => {
++                    // MatixBridge: a session may only be started from the WebSocket port, which sits
++                    // behind the sign-in gate. Native controllers (any app, any key) are refused.
++                    if !ws {
++                        let mut msg_out = RendezvousMessage::new();
++                        msg_out.set_punch_hole_response(PunchHoleResponse {
++                            other_failure: MATIX_NATIVE_REFUSED.to_owned(),
++                            ..Default::default()
++                        });
++                        Self::send_to_sink(sink, msg_out).await;
++                        return false;
++                    }
+                     // there maybe several attempt, so sink can be none
+                     if let Some(sink) = sink.take() {
+                         self.tcp_punch.lock().await.insert(try_into_v4(addr), sink);
+@@ -491,6 +506,10 @@ impl RendezvousServer {
+                     return true;
+                 }
+                 Some(rendezvous_message::Union::RequestRelay(mut rf)) => {
++                    // MatixBridge: see PunchHoleRequest. The customer app sends RequestRelay only to hbbr.
++                    if !ws {
++                        return false;
++                    }
+                     // there maybe several attempt, so sink can be none
+                     if let Some(sink) = sink.take() {
+                         self.tcp_punch.lock().await.insert(try_into_v4(addr), sink);

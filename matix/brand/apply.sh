@@ -22,6 +22,10 @@ cfg=libs/hbb_common/src/config.rs
 sub "$cfg" "s/pub const RENDEZVOUS_SERVERS: &\[&str\] = &\[[^\]]*\];/pub const RENDEZVOUS_SERVERS: &[&str] = &[\"$MATIX_KG_HOST\"];/"
 sub "$cfg" "s/pub const RS_PUB_KEY: &str = \"[^\"]*\";/pub const RS_PUB_KEY: &str = \"$MATIX_KG_KEY\";/"
 sub "$cfg" "s/(pub static ref APP_NAME: RwLock<String> = RwLock::new\()\"RustDesk\"/\$1\"$APP_ID\"/"
+# Receive-only: the customer app shows its ID and password and can be controlled, but cannot
+# control other computers (agents connect from bridge.matix.one). Upstream's "incoming only"
+# custom-client mode, which is normally set from a signed custom.txt; here it is the built-in default.
+sub "$cfg" 's/pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default\(\);/pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("conn-type".to_owned(), "incoming".to_owned())]));/'
 
 sub flutter/windows/runner/Runner.rc 's/VALUE "FileDescription", "RustDesk Remote Desktop"/VALUE "FileDescription", "'"$DISPLAY_NAME"' Remote Support"/'
 sub flutter/windows/runner/Runner.rc 's/VALUE "ProductName", "RustDesk"/VALUE "ProductName", "'"$DISPLAY_NAME"'"/'

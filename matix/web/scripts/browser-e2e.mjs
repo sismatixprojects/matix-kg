@@ -24,6 +24,7 @@ if (process.env.TEAM_API_PORT) {
       const send = (o, st = 200) => res.writeHead(st, { ...cors, "Content-Type": "application/json" }).end(JSON.stringify(o));
       if (path === "/auth/exchange") return json?.code === "ci-code" ? send({ success: true, token: "ci-token", expires_in: 3600, agent: { id: 1, username: "ci", full_name: "CI Agent", role: "agent" }, org: { id: 1, name: "CI Org" } }) : send({ success: false, message: "expired" }, 401);
       if (req.headers.authorization !== "Bearer ci-token") return send({ success: false }, 401);
+      if (path === "/me") return send({ success: true, agent: { id: 1, username: "ci", full_name: "CI Agent", role: "agent" }, org: { id: 1, name: "CI Org" } });
       if (path === "/devices") return send({ success: true, devices: [] });
       if (path === "/sessions") return send({ success: true, session_id: 7, device: { id: json.device_id, name: "", host: json.host } });
       if (path === "/sessions/7/end") return send({ success: true });
@@ -62,6 +63,24 @@ const litPixels = () =>
 
 try {
   await page.goto(url);
+  if (teamApi) {
+    // agentsUrl set: signing in is required, and the server's gate (in front of the ID and relay
+    // WebSocket ports here, as in production) lets the browser through only with the sign-in cookie.
+    await page.waitForSelector(".team-signin");
+    if (await page.$("#peer-id")) throw new Error("The connect form is shown without signing in");
+    console.log("signed out: only the sign-in button is shown");
+    await page.goto("about:blank");
+    await page.goto(`${url}#code=ci-code`);
+    await page.waitForSelector(".team-dot");
+    await page.context().clearCookies();
+    await page.fill("#peer-id", id);
+    await page.fill("#peer-pw", password);
+    await page.click("button[type=submit]");
+    await page.waitForFunction(() => /Cannot reach the ID server/.test(document.querySelector(".error")?.textContent || ""), null, { timeout: 30000 });
+    console.log("without the gate cookie the server refuses the browser:", await page.textContent(".error"));
+    await page.reload(); // signed in (localStorage): the cookie is set again at boot
+    await page.waitForSelector(".team-dot");
+  }
   await page.fill("#peer-id", id);
   await page.fill("#peer-pw", password);
   await page.fill("#agent", "CI e2e");

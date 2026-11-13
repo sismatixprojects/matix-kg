@@ -1,6 +1,7 @@
 // Team sign-in and shared address book, backed by agents.matix.one (/api/v1/matixbridge).
-// Optional: only active when config.json has "agentsUrl". Without it the web client works exactly
-// as before, with the per-browser address book.
+// Active when config.json has "agentsUrl": then signing in is required, and the token also goes to
+// the server's sign-in gate (cookie on /ws) without which the ID and relay servers refuse the
+// browser. Without "agentsUrl" the web client works as before, with the per-browser address book.
 //
 // Sign-in: the agent is sent to <agentsUrl>/bridge-signin, signs in there if needed, and comes back
 // with a single-use code in the URL fragment, which is exchanged here for a MatixBridge-only token
@@ -45,7 +46,17 @@ function load(): Stored | null {
   return null;
 }
 
+// The browser cannot put headers on a WebSocket, so the gate in front of /ws/id and /ws/relay
+// reads the token from this cookie. SameSite=Strict: other sites cannot open the sockets as the agent.
+const GATE_COOKIE = "mb_t";
+function gateCookie() {
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  const age = state ? Math.max(0, Math.floor((state.exp - Date.now()) / 1000)) : 0;
+  document.cookie = `${GATE_COOKIE}=${state ? encodeURIComponent(state.token) : ""}; Path=/ws; Max-Age=${age}; SameSite=Strict${secure}`;
+}
+
 function persist() {
+  gateCookie();
   try {
     if (state) localStorage.setItem(KEY, JSON.stringify(state));
     else localStorage.removeItem(KEY);
@@ -96,6 +107,7 @@ export const team = {
   init(agentsUrl: string | undefined) {
     base = (agentsUrl || "").replace(/\/+$/, "");
     state = base ? load() : null;
+    if (base) gateCookie();
   },
   get enabled() {
     return !!base;
@@ -130,6 +142,10 @@ export const team = {
     if (!r.ok || !j.token) throw new Error(j.message || "Sign-in failed");
     state = { api: base, token: j.token, exp: Date.now() + (Number(j.expires_in) || 3600) * 1000, agent: j.agent, org: j.org };
     persist();
+  },
+  /** Asks agents.matix.one whether the sign-in still holds; a refusal signs out (TeamAuthError). */
+  async check() {
+    await call("GET", "/me");
   },
   signOut() {
     state = null;
