@@ -121,6 +121,7 @@ try {
 
   if (teamApi) {
     // Launched from a ticket in agents.matix.one: single-use code + device + ticket in the fragment.
+    calls.length = 0; // the session above was logged too (signed in); check only the ticket launch
     await page.goto("about:blank");
     await page.goto(`${url}#code=ci-code&id=${id}&ticket=10`);
     // Without a password the session waits for the customer to click Accept, which this headless
