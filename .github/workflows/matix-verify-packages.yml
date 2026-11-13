@@ -1,0 +1,87 @@
+name: Matix verify packages
+
+# Installs a published MatixBridge release on a clean Windows machine and checks what a
+# customer gets: names, shortcuts, uninstall entry, and that the app starts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to verify"
+        required: true
+        default: "matixbridge-v0.3"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-msi:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Install the MSI and check the result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release download $env:TAG -R $env:GITHUB_REPOSITORY -p 'MatixBridge-*-x86_64.msi' -O setup.msi
+          $p = Start-Process msiexec.exe -ArgumentList '/i','setup.msi','/qn','/l*v','msi.log' -Wait -PassThru
+          Write-Host "msiexec exit code: $($p.ExitCode)"
+          $fail = @()
+          function Check($what, $ok) { if ($ok) { Write-Host "OK   $what" } else { Write-Host "FAIL $what"; $script:fail += $what } }
+
+          $dir = 'C:\Program Files\MatixBridge'
+          Check "installed to $dir" (Test-Path "$dir\MatixBridge.exe")
+          $desk = @("$env:PUBLIC\Desktop\MatixBridge.lnk", "$env:USERPROFILE\Desktop\MatixBridge.lnk") | Where-Object { Test-Path $_ }
+          Check "desktop shortcut" ($desk.Count -gt 0)
+          $menu = Get-ChildItem "$env:ProgramData\Microsoft\Windows\Start Menu\Programs","$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Recurse -Filter 'MatixBridge*.lnk' -ErrorAction SilentlyContinue
+          Check "start menu shortcut" ($menu.Count -gt 0)
+          $menu | ForEach-Object { Write-Host "     $($_.FullName)" }
+          $desk | ForEach-Object {
+            $t = (New-Object -ComObject WScript.Shell).CreateShortcut($_).TargetPath
+            Write-Host "     $_ -> $t"
+            Check "desktop shortcut targets MatixBridge.exe" ($t -like '*MatixBridge.exe')
+          }
+          $arp = Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object { $_.DisplayName -like 'MatixBridge*' }
+          Check "Add/Remove Programs entry named MatixBridge" ($arp -ne $null)
+          $arp | ForEach-Object { Write-Host "     $($_.DisplayName) $($_.DisplayVersion) by $($_.Publisher)" }
+          $rd = Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object { $_.DisplayName -like '*RustDesk*' }
+          Check "no RustDesk entry" ($rd -eq $null)
+          $svc = Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*MatixBridge*' -or $_.DisplayName -like '*MatixBridge*' -or $_.Name -like '*RustDesk*' }
+          $svc | ForEach-Object { Write-Host "     service: $($_.Name) / $($_.DisplayName) ($($_.Status))" }
+          Check "service named MatixBridge" (($svc | Where-Object { $_.DisplayName -like '*MatixBridge*' }) -ne $null)
+          Start-Sleep 5
+          $proc = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*MatixBridge*' }
+          $proc | ForEach-Object { Write-Host "     running: $($_.ProcessName) $($_.Path)" }
+          Check "MatixBridge process running" ($proc -ne $null)
+          if ($fail.Count) { Get-Content msi.log -Tail 30; throw "Failed: $($fail -join ', ')" }
+
+  macos-dmg:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Check both DMGs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -e
+          for arch in aarch64 x86_64; do
+            gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p "MatixBridge-*-$arch.dmg" -O "$arch.dmg"
+            m=$(mktemp -d)
+            hdiutil attach -nobrowse -readonly -mountpoint "$m" "$arch.dmg" >/dev/null
+            app="$m/MatixBridge.app"
+            test -d "$app" || { echo "FAIL $arch: no MatixBridge.app"; ls "$m"; exit 1; }
+            name=$(/usr/libexec/PlistBuddy -c "Print :CFBundleName" "$app/Contents/Info.plist")
+            exe=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$app/Contents/Info.plist")
+            archs=$(lipo -archs "$app/Contents/MacOS/$exe")
+            codesign --verify --deep --strict "$app"
+            echo "OK   $arch.dmg: $name ($exe) archs=[$archs] signature valid, volume=$(diskutil info "$m" | awk -F': *' '/Volume Name/{print $2}')"
+            want=$([ "$arch" = aarch64 ] && echo arm64 || echo x86_64)
+            [ "$archs" = "$want" ] || { echo "FAIL $arch: expected $want"; exit 1; }
+            hdiutil detach "$m" >/dev/null
+          done
