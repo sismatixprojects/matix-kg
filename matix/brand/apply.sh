@@ -25,9 +25,13 @@ sub "$cfg" "s/(pub static ref APP_NAME: RwLock<String> = RwLock::new\()\"RustDes
 
 sub flutter/windows/runner/Runner.rc 's/VALUE "FileDescription", "RustDesk Remote Desktop"/VALUE "FileDescription", "'"$DISPLAY_NAME"' Remote Support"/'
 sub flutter/windows/runner/Runner.rc 's/VALUE "ProductName", "RustDesk"/VALUE "ProductName", "'"$DISPLAY_NAME"'"/'
+perl -0pi -e 's/VALUE "CompanyName", "[^"]*"/VALUE "CompanyName", "Sismatix Information Systems"/; s/VALUE "LegalCopyright", "[^"]*"/VALUE "LegalCopyright", "Copyright \(C\) 2026 Sismatix Information Systems. MatixBridge is based on RustDesk \(AGPL-3.0\)."/' flutter/windows/runner/Runner.rc
 sub flutter/android/app/src/main/AndroidManifest.xml 's/android:label="RustDesk"/android:label="'"$DISPLAY_NAME"'"/'
 sub flutter/android/app/src/main/AndroidManifest.xml 's/android:label="RustDesk Input"/android:label="'"$DISPLAY_NAME"' Input"/'
 sub flutter/ios/Runner/Info.plist 's#(<key>CFBundleDisplayName</key>\s*<string>)RustDesk(</string>)#${1}'"$DISPLAY_NAME"'${2}#'
+
+# Android adaptive icon: our foreground is the white Matix mark, so the tile is Matix cyan.
+sub flutter/android/app/src/main/res/values/ic_launcher_background.xml 's/<color name="ic_launcher_background">#ffffff<\/color>/<color name="ic_launcher_background">#06b6d4<\/color>/'
 
 # Icons: same paths and sizes as upstream, pre-rendered by matix/brand/gen_assets.py.
 (cd matix/brand/assets && find . -type f) | while read -r f; do
