@@ -12,7 +12,7 @@ Environment=GATE_PORT=21120
 Environment=GATE_ID_UPSTREAM=127.0.0.1:21118
 Environment=GATE_RELAY_UPSTREAM=127.0.0.1:21119
 Environment=GATE_AUTH_URL=http://127.0.0.1:3001/api/v1/matixbridge/me
-Environment=GATE_ORIGINS=https://bridge.matix.one,https://kg.matix.one
+Environment=GATE_ORIGINS=https://agents.matix.one
 Restart=always
 RestartSec=2
 NoNewPrivileges=yes

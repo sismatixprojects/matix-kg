@@ -72,7 +72,7 @@ const check = (ok: boolean, what: string) => {
 // 1. PunchHoleRequest over TCP: refused with the MatixBridge message.
 const ph = await tcp({ punch_hole_request: { id: ID, licence_key: KEY, nat_type: R.NatType.SYMMETRIC, conn_type: R.ConnType.DEFAULT_CONN, version: "1.4.0", force_relay: true } });
 console.log("TCP punch_hole_request reply:", JSON.stringify(ph?.punch_hole_response ?? ph));
-check(!!ph?.punch_hole_response?.other_failure?.includes("bridge.matix.one"), "TCP punch_hole_request is refused with the bridge.matix.one message");
+check(!!ph?.punch_hole_response?.other_failure?.includes("agents.matix.one"), "TCP punch_hole_request is refused with the agents.matix.one message");
 
 // 2. RequestRelay over TCP: the peer must never be asked to join the relay.
 const tcpUuid = crypto.randomUUID();

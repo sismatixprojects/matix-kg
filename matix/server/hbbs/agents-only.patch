@@ -8,7 +8,7 @@ index dff45eb..3e3d7be 100644
  
 +/// Shown by native apps that try to control a device: only the MatixBridge web client may.
 +const MATIX_NATIVE_REFUSED: &str =
-+    "Remote control is only available from bridge.matix.one. Sign in there with your Matix Agents account.";
++    "Remote control is only available from agents.matix.one (MatixBridge). Sign in there with your Matix Agents account.";
 +
  #[derive(Clone, Debug)]
  enum Data {

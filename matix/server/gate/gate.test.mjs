@@ -79,11 +79,11 @@ test("gate", async (t) => {
   const gate = createGate({
     upstreams: { "/ws/id": `127.0.0.1:${idPort}`, "/ws/relay": `127.0.0.1:${idPort}` },
     authUrl: `http://127.0.0.1:${authPort}/me`,
-    origins: "https://bridge.matix.one",
+    origins: "https://agents.matix.one",
     log: () => {},
   });
   const port = await listen(gate);
-  const origin = { Origin: "https://bridge.matix.one" };
+  const origin = { Origin: "https://agents.matix.one" };
 
   await t.test("no sign-in → 401", async () => {
     assert.equal((await handshake(port, "/ws/id", origin)).status, 401);

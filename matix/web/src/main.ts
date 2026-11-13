@@ -1127,7 +1127,8 @@ async function filesScreen(cfg: ServerConfig, peerId: string, password: string, 
 // ---------- boot ----------
 loadConfig()
   .then(async (cfg) => {
-    team.init(cfg.agentsUrl);
+    // The gate cookie covers the WebSocket paths: ws(s)://host/bridge/ws/id → "/bridge/ws".
+    team.init(cfg.agentsUrl, new URL(cfg.idServer).pathname.replace(/\/[^/]*$/, "") || "/");
     // Fragment from agents.matix.one: #code=…&id=…&ticket=…&files=1. Cleared at once so the
     // single-use code does not stay in the address bar or history.
     const hp = new URLSearchParams(location.hash.slice(1));

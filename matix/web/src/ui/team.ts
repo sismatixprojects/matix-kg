@@ -33,6 +33,7 @@ export interface TeamDevice extends Device {
 const KEY = "matixbridge.team";
 
 let base = "";
+let cookiePath = "/ws";
 let state: Stored | null = null;
 const listeners = new Set<() => void>();
 
@@ -52,7 +53,7 @@ const GATE_COOKIE = "mb_t";
 function gateCookie() {
   const secure = location.protocol === "https:" ? "; Secure" : "";
   const age = state ? Math.max(0, Math.floor((state.exp - Date.now()) / 1000)) : 0;
-  document.cookie = `${GATE_COOKIE}=${state ? encodeURIComponent(state.token) : ""}; Path=/ws; Max-Age=${age}; SameSite=Strict${secure}`;
+  document.cookie = `${GATE_COOKIE}=${state ? encodeURIComponent(state.token) : ""}; Path=${cookiePath}; Max-Age=${age}; SameSite=Strict${secure}`;
 }
 
 function persist() {
@@ -103,10 +104,20 @@ function toDevice(d: Record<string, unknown>): TeamDevice {
 }
 
 export const team = {
-  /** Called once at boot with config.json's agentsUrl (may be empty). */
-  init(agentsUrl: string | undefined) {
+  /**
+   * Called once at boot with config.json's agentsUrl (may be empty) and the path the ID/relay
+   * WebSockets live under (the gate cookie is scoped to it, e.g. "/bridge/ws").
+   */
+  init(agentsUrl: string | undefined, wsPath = "/ws") {
     base = (agentsUrl || "").replace(/\/+$/, "");
+    cookiePath = wsPath;
     state = base ? load() : null;
+    // Served by agents.matix.one itself: signing out of the portal signs out of MatixBridge too.
+    try {
+      if (state && new URL(base).origin === location.origin && !localStorage.getItem("token")) state = null;
+    } catch {
+      /* storage blocked */
+    }
     if (base) gateCookie();
   },
   get enabled() {

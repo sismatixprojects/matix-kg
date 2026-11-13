@@ -19,7 +19,7 @@ export function createGate(opts = {}) {
       "/ws/relay": env.GATE_RELAY_UPSTREAM || "127.0.0.1:21119",
     },
     authUrl: opts.authUrl || env.GATE_AUTH_URL || "http://127.0.0.1:3001/api/v1/matixbridge/me",
-    origins: new Set((opts.origins || env.GATE_ORIGINS || "https://bridge.matix.one,https://kg.matix.one").split(",").map((s) => s.trim()).filter(Boolean)),
+    origins: new Set((opts.origins || env.GATE_ORIGINS || "https://agents.matix.one").split(",").map((s) => s.trim()).filter(Boolean)),
     cacheMs: Number(opts.cacheMs ?? env.GATE_CACHE_MS ?? 60_000),
     authTimeoutMs: Number(opts.authTimeoutMs ?? 5000),
     log: opts.log || ((...a) => console.log(new Date().toISOString(), ...a)),
