@@ -123,6 +123,13 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
 .tb.rec.on { background: #7f1d1d88; border-color: var(--danger); }
 .tb svg { width: 16px; height: 16px; }
 .tb select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+.tb-menu-wrap { position: relative; }
+.tb-menu { position: absolute; top: 110%; left: 0; z-index: 20; min-width: 320px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 18px 40px #000a; }
+.tb-menu button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 9px 10px; border-radius: 8px; font-size: 13px; }
+.tb-menu button:hover:not([disabled]) { background: var(--panel-2); }
+.tb-menu button[disabled] { opacity: .45; cursor: default; }
+.tb-menu .ck-mark { width: 16px; color: var(--ok); font-weight: 700; }
+.tb-menu hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
 .badge { background: var(--danger); color: #fff; border-radius: 999px; font-size: 10px; padding: 0 5px; }
 
 .body { flex: 1; display: flex; min-height: 0; }

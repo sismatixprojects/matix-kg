@@ -5,6 +5,7 @@ import { FileSession, type RemoteDir, type RemoteEntry } from "./core/files";
 import { VideoSink, webCodecsAvailable } from "./ui/video";
 import { mapKey, remoteOs, type RemoteOs } from "./ui/keymap";
 import { book, displayName, osLabel, timeAgo, type Device } from "./ui/addressbook";
+import { AudioPlayer } from "./ui/audio";
 
 const MOUSE_MOVE = 0, MOUSE_DOWN = 1, MOUSE_UP = 2, MOUSE_WHEEL = 3;
 const BUTTONS = [0x01, 0x04, 0x02, 0x08, 0x10]; // DOM button index -> RustDesk button bit
@@ -243,9 +244,12 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const bFull = tb("full", "Full screen");
   const bClose = tb("close", "Disconnect");
   for (const b of [bCad, bLock, bRefresh, bType, bClip, bFit, bFull]) b.classList.add("compact");
+  const bMore = h("button", { class: "tb", title: "More controls" }, h("span", {}, "More ▾"));
+  const moreMenu = h("div", { class: "tb-menu hidden" });
+  const moreWrap = h("div", { class: "tb-menu-wrap" }, bMore, moreMenu);
   bClose.classList.add("danger");
 
-  const toolbar = h("div", { class: "toolbar" }, title, bDisplay, bQuality, bCad, bLock, bRefresh, bType, bClip, bFit, h("div", { class: "spacer" }), bChat, bFiles, bRec, bFull, bClose);
+  const toolbar = h("div", { class: "toolbar" }, title, bDisplay, bQuality, bCad, bLock, bRefresh, bType, bClip, bFit, moreWrap, h("div", { class: "spacer" }), bChat, bFiles, bRec, bFull, bClose);
   const root = h("div", { class: "session" }, toolbar, h("div", { class: "body" }, stage, drawerHost));
   app.append(root);
   statusBox(overlay, "Connecting…");
@@ -430,6 +434,104 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     await kb?.lock?.().catch(() => {});
   };
 
+  // ---- more controls: sound, block input, privacy mode, elevation, restart ----
+  const audio = new AudioPlayer();
+  const ctl = { sound: false, block: false, privacy: false };
+  let warnedElevation = false;
+  function menuItem(label: string, onClick: () => void, opts: { checked?: boolean; disabled?: string } = {}) {
+    const b = h("button", { type: "button" }, h("span", { class: "ck-mark" }, opts.checked ? "✓" : ""), h("span", {}, label));
+    if (opts.disabled) {
+      b.setAttribute("disabled", "");
+      b.title = opts.disabled;
+    }
+    b.onclick = (e) => {
+      e.stopPropagation();
+      moreMenu.classList.add("hidden");
+      onClick();
+      canvas.focus();
+    };
+    return b;
+  }
+  function buildMenu() {
+    const isWin = os === "windows";
+    const privacyOk = session.privacyModes().length > 0;
+    moreMenu.replaceChildren(
+      menuItem("Sound from the remote computer", () => {
+        if (!AudioPlayer.available()) return toast("This browser cannot play remote sound. Use Chrome or Edge.", true);
+        ctl.sound = !ctl.sound;
+        if (ctl.sound) audio.unlock();
+        session.setAudio(ctl.sound);
+        toast(ctl.sound ? "Remote sound on" : "Remote sound off", false, 1500);
+      }, { checked: ctl.sound }),
+      menuItem("Block the customer's mouse and keyboard", () => {
+        ctl.block = !ctl.block;
+        session.setBlockInput(ctl.block);
+      }, { checked: ctl.block, disabled: isWin ? "" : "Only Windows computers support this" }),
+      menuItem("Privacy mode: black out the customer's screen", () => {
+        ctl.privacy = !ctl.privacy;
+        session.setPrivacyMode(ctl.privacy);
+        toast(ctl.privacy ? "Turning privacy mode on…" : "Turning privacy mode off…", false, 1500);
+      }, { checked: ctl.privacy, disabled: privacyOk ? "" : "The remote computer does not support privacy mode" }),
+      h("hr"),
+      menuItem("Request admin rights (UAC)", () => {
+        session.requestElevation();
+        toast("Asked the customer to allow admin rights. They must click Yes on their screen.", false, 5000);
+      }, { disabled: isWin ? "" : "Only needed on Windows" }),
+      menuItem("Restart the remote computer", () => {
+        if (!window.confirm("Restart the customer's computer now? Unsaved work on it will be lost.")) return;
+        session.restartRemote();
+        toast("Restart requested. Reconnect once the computer is back and MatixBridge is open.", false, 6000);
+      })
+    );
+  }
+  bMore.onclick = (e) => {
+    e.stopPropagation();
+    buildMenu();
+    moreMenu.classList.toggle("hidden");
+  };
+  document.addEventListener("click", () => moreMenu.classList.add("hidden"));
+  session.on("audioFormat", (rate, ch) => audio.configure(rate, ch));
+  session.on("audio", (d) => {
+    if (ctl.sound) audio.push(d);
+  });
+  session.on("notice", (kind, state, details) => {
+    const B = M.BackNotification;
+    if (kind === "block") {
+      const ok = state === B.BlockInputState.BlkOnSucceeded || state === B.BlockInputState.BlkOffSucceeded;
+      if (!ok) ctl.block = state === B.BlockInputState.BlkOffFailed;
+      toast(
+        state === B.BlockInputState.BlkOnSucceeded ? "The customer's mouse and keyboard are blocked"
+          : state === B.BlockInputState.BlkOffSucceeded ? "The customer's mouse and keyboard work again"
+          : "The remote computer could not change input blocking",
+        !ok
+      );
+      return;
+    }
+    const P = B.PrivacyModeState;
+    const on = state === P.PrvOnSucceeded;
+    const off = state === P.PrvOffSucceeded || state === P.PrvOffByPeer || state === P.PrvOffUnknown;
+    if (on) ctl.privacy = true;
+    else if (off) ctl.privacy = false;
+    else if (state !== P.PrvOnByOther) ctl.privacy = false;
+    const msg =
+      on ? "Privacy mode on: the customer's screen is black"
+      : state === P.PrvOffByPeer ? "The customer turned privacy mode off"
+      : off ? "Privacy mode off"
+      : state === P.PrvNotSupported ? "Privacy mode is not supported on that computer"
+      : state === P.PrvOnFailedDenied ? "The customer's settings do not allow privacy mode"
+      : `Privacy mode failed${details ? `: ${details}` : ""}`;
+    toast(msg, !on && !off);
+  });
+  session.on("elevation", (err) => {
+    if (!err) toast("Admin rights granted. You can now control admin windows.");
+    else toast(`Admin rights were not granted: ${err}`, true, 6000);
+  });
+  session.on("needsElevation", () => {
+    if (warnedElevation || os !== "windows") return;
+    warnedElevation = true;
+    toast("The customer's active window needs admin rights. Use More ▾ › Request admin rights.", false, 8000);
+  });
+
   // ---- recording ----
   let recorder: MediaRecorder | undefined;
   let recChunks: Blob[] = [];
@@ -565,6 +667,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const onUnload = () => session.close("Disconnected");
   window.addEventListener("beforeunload", onUnload);
   function teardown() {
+    audio.close();
     document.removeEventListener("keydown", kd, true);
     document.removeEventListener("keyup", ku, true);
     window.removeEventListener("blur", releaseKeys);
