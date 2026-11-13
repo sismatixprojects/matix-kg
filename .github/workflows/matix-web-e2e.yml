@@ -163,3 +163,116 @@ jobs:
           name: e2e-screenshots
           path: ${{ runner.temp }}/e2e-*.png
           if-no-files-found: ignore
+
+  e2e-windows:
+    # Same client tests against an unmodified RustDesk peer installed on Windows (the main
+    # customer platform), plus the block-input / privacy-mode controls.
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: matix/web/package-lock.json
+
+      - name: Install and build the web client
+        working-directory: matix/web
+        run: |
+          npm ci
+          npm run build
+          npm i --no-save playwright@1.49.1
+          npx playwright install chromium
+
+      - name: Start hbbs/hbbr
+        run: |
+          $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
+          "IP=$ip" | Out-File -Append $env:GITHUB_ENV
+          Invoke-WebRequest "https://github.com/rustdesk/rustdesk-server/releases/download/$env:SERVER_VERSION/rustdesk-server-windows-x86_64-unsigned.zip" -OutFile server.zip
+          Expand-Archive server.zip -DestinationPath server
+          $bin = (Get-ChildItem server -Recurse -Filter hbbs.exe | Select-Object -First 1).DirectoryName
+          New-Item -ItemType Directory srv | Out-Null
+          Start-Process "$bin\hbbr.exe" -ArgumentList '-k','_' -WorkingDirectory srv -RedirectStandardOutput srv\hbbr.log -RedirectStandardError srv\hbbr.err
+          Start-Sleep 2
+          Start-Process "$bin\hbbs.exe" -ArgumentList '-r',"$($ip):21117",'-k','_' -WorkingDirectory srv -RedirectStandardOutput srv\hbbs.log -RedirectStandardError srv\hbbs.err
+          for ($i = 0; $i -lt 30 -and -not (Test-Path srv\id_ed25519.pub); $i++) { Start-Sleep 1 }
+          $key = (Get-Content srv\id_ed25519.pub -Raw).Trim()
+          "KEY=$key" | Out-File -Append $env:GITHUB_ENV
+          Write-Host "server $ip key $key"
+
+      - name: Install and configure the peer (RustDesk ${{ env.RUSTDESK_VERSION }} MSI)
+        run: |
+          Invoke-WebRequest "https://github.com/rustdesk/rustdesk/releases/download/$env:RUSTDESK_VERSION/rustdesk-$env:RUSTDESK_VERSION-x86_64.msi" -OutFile peer.msi
+          Start-Process msiexec.exe -ArgumentList '/i','peer.msi','/qn','/l*v','msi.log' -Wait
+          $exe = 'C:\Program Files\RustDesk\rustdesk.exe'
+          if (-not (Test-Path $exe)) { Get-Content msi.log -Tail 40; throw "peer not installed" }
+          $pw = "e2e-" + [guid]::NewGuid().ToString('N').Substring(0, 12)
+          Write-Host "::add-mask::$pw"
+          "PASSWORD=$pw" | Out-File -Append $env:GITHUB_ENV
+          function rd($a) { $p = Start-Process $exe -ArgumentList $a -Wait -PassThru -RedirectStandardOutput out.txt; Get-Content out.txt -ErrorAction SilentlyContinue }
+          Start-Sleep 5
+          rd @('--option','custom-rendezvous-server',$env:IP)
+          rd @('--option','relay-server',$env:IP)
+          rd @('--option','key',$env:KEY)
+          rd @('--option','approve-mode','password')
+          rd @('--option','verification-method','use-permanent-password')
+          rd @('--password',$pw)
+          Restart-Service -Name RustDesk -ErrorAction SilentlyContinue
+          Start-Process notepad.exe
+          $id = ''
+          for ($i = 0; $i -lt 90 -and -not $id; $i++) {
+            Start-Sleep 2
+            $m = Select-String -Path srv\hbbs.log,srv\hbbs.err -Pattern 'update_pk (\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
+            if ($m) { $id = $m.Matches[0].Groups[1].Value }
+          }
+          if (-not $id) { Get-Content srv\hbbs.log,srv\hbbs.err -Tail 30; Get-Service RustDesk; throw "peer never registered" }
+          Write-Host "Peer registered as $id"
+          "ID=$id" | Out-File -Append $env:GITHUB_ENV
+
+      - name: Protocol smoke test + controls (Node)
+        working-directory: matix/web
+        env:
+          WAIT_MS: "6000"
+          CONTROLS: "1"
+        run: |
+          $env:ID_SERVER = "ws://$($env:IP):21118"
+          $env:RELAY_SERVER = "ws://$($env:IP):21119"
+          npx tsx scripts/smoke.ts
+
+      - name: File transfer test (Node)
+        working-directory: matix/web
+        run: |
+          $env:ID_SERVER = "ws://$($env:IP):21118"
+          $env:RELAY_SERVER = "ws://$($env:IP):21119"
+          $env:REMOTE_DIR = "C:\Windows\Temp"
+          npx tsx scripts/files-smoke.ts
+
+      - name: Browser test (headless Chromium)
+        working-directory: matix/web
+        run: |
+          '{"idServer":"ws://' + $env:IP + ':21118","relayServer":"ws://' + $env:IP + ':21119","key":"' + $env:KEY + '"}' | Out-File -Encoding ascii dist\config.json
+          Start-Process npx -ArgumentList 'vite','preview','--port','4173','--strictPort','--host','127.0.0.1' -WindowStyle Hidden
+          Start-Sleep 4
+          $env:URL = "http://127.0.0.1:4173/"
+          $env:SHOT_DIR = $env:RUNNER_TEMP
+          node scripts/browser-e2e.mjs
+
+      - name: Logs
+        if: always()
+        run: |
+          Get-Content srv\hbbs.log,srv\hbbs.err -Tail 30 -ErrorAction SilentlyContinue
+          Get-ChildItem "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\log","$env:APPDATA\RustDesk\log" -Recurse -Filter *.log -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "== $($_.FullName)"; Get-Content $_.FullName -Tail 40 }
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: e2e-windows-screenshots
+          path: ${{ runner.temp }}/e2e-*.png
+          if-no-files-found: ignore

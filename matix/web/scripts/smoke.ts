@@ -43,6 +43,21 @@ try {
   await session.connect(process.env.PASSWORD);
   console.log(`logged in after ${Date.now() - t0} ms`);
   if (process.env.CHAT) session.chat(process.env.CHAT);
+  if (process.env.CONTROLS) {
+    // Exercise the More-menu controls and print what the peer answers.
+    const notices: string[] = [];
+    session.on("notice", (kind, state, details) => notices.push(`${kind}:${state}${details ? ` (${details})` : ""}`));
+    session.setBlockInput(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    session.setBlockInput(false);
+    await new Promise((r) => setTimeout(r, 1500));
+    console.log("privacy modes offered:", JSON.stringify(session.privacyModes()));
+    session.setPrivacyMode(true);
+    await new Promise((r) => setTimeout(r, 4000));
+    session.setPrivacyMode(false);
+    await new Promise((r) => setTimeout(r, 2000));
+    console.log("control notices:", notices.join(", ") || "none");
+  }
   await new Promise((r) => setTimeout(r, Number(process.env.WAIT_MS || 6000)));
   console.log(`video: ${frames} frames (${keyFrames} key), codecs: ${[...codecs].join(",") || "none"}`);
   session.close("smoke done");
