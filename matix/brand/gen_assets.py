@@ -74,6 +74,23 @@ def main():
     for name in sorted(os.listdir(os.path.join(REPO, ios))):
         if name.endswith(".png"):
             save_like(f"{ios}/{name}", ios_bg.convert("RGB"))
+    # macOS app icon (.icns), built with Apple's iconutil when available (run on a Mac).
+    import shutil, subprocess, tempfile
+    if shutil.which("iconutil"):
+        with tempfile.TemporaryDirectory() as tmp:
+            iconset = os.path.join(tmp, "AppIcon.iconset")
+            os.makedirs(iconset)
+            for size in (16, 32, 128, 256, 512):
+                for scale in (1, 2):
+                    px = size * scale
+                    name = f"icon_{size}x{size}{'@2x' if scale == 2 else ''}.png"
+                    mac.resize((px, px), Image.LANCZOS).save(os.path.join(iconset, name))
+            dst = os.path.join(OUT, "flutter/macos/Runner/AppIcon.icns")
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            subprocess.run(["iconutil", "-c", "icns", iconset, "-o", dst], check=True)
+            print("wrote flutter/macos/Runner/AppIcon.icns")
+    else:
+        print("skip AppIcon.icns (iconutil not found; run on macOS)")
     # In-app logo (Flutter asset)
     svg_dst = os.path.join(OUT, "flutter/assets/icon.svg")
     os.makedirs(os.path.dirname(svg_dst), exist_ok=True)
