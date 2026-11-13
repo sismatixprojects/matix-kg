@@ -59,6 +59,9 @@ try {
   await page.screenshot({ path: `${shots}/e2e-typed.png` });
   console.log("after typing:", JSON.stringify(after));
   if (after.hash === before.hash) throw new Error("The remote picture did not change after typing");
+  const saved = await page.evaluate((peer) => JSON.parse(localStorage.getItem("matixbridge.book") || "[]").find((d) => d.id === peer), id);
+  console.log("address book entry:", JSON.stringify(saved));
+  if (!saved || !saved.host) throw new Error("The connected device was not saved to the address book");
   console.log("BROWSER E2E OK");
   await browser.close();
 } catch (e) {
