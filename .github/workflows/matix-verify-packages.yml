@@ -64,6 +64,10 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: src
+          sparse-checkout: matix/brand
       - name: Check both DMGs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -83,5 +87,31 @@ jobs:
             echo "OK   $arch.dmg: $name ($exe) archs=[$archs] signature valid, volume=$(diskutil info "$m" | awk -F': *' '/Volume Name/{print $2}')"
             want=$([ "$arch" = aarch64 ] && echo arm64 || echo x86_64)
             [ "$archs" = "$want" ] || { echo "FAIL $arch: expected $want"; exit 1; }
+            icon=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$app/Contents/Info.plist")
+            icon="$app/Contents/Resources/${icon%.icns}.icns"
+            if cmp -s "$icon" src/matix/brand/assets/flutter/macos/Runner/AppIcon.icns; then echo "OK   $arch.dmg: Matix app icon"; else echo "FAIL $arch: app icon is not the Matix icon ($icon)"; exit 1; fi
             hdiutil detach "$m" >/dev/null
           done
+
+  android-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: src
+          sparse-checkout: matix/brand
+      - name: Check every APK carries the Matix launcher icon
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -e
+          want=$(sha256sum src/matix/brand/assets/flutter/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png | cut -d' ' -f1)
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p 'MatixBridge-*.apk'
+          fail=0
+          for apk in MatixBridge-*.apk; do
+            d=$(mktemp -d); unzip -q "$apk" 'res/*' -d "$d"
+            if find "$d/res" -name '*.png' -exec sha256sum {} + | grep -q "^$want "; then echo "OK   $apk: Matix launcher icon"; else echo "FAIL $apk: Matix launcher icon not found"; fail=1; fi
+          done
+          exit $fail
