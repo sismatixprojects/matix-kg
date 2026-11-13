@@ -6,6 +6,7 @@ import { VideoSink, webCodecsAvailable } from "./ui/video";
 import { mapKey, remoteOs, type RemoteOs } from "./ui/keymap";
 import { book, displayName, osLabel, timeAgo, type Device } from "./ui/addressbook";
 import { AudioPlayer } from "./ui/audio";
+import { team, TeamAuthError, type TeamDevice } from "./ui/team";
 
 const MOUSE_MOVE = 0, MOUSE_DOWN = 1, MOUSE_UP = 2, MOUSE_WHEEL = 3;
 const BUTTONS = [0x01, 0x04, 0x02, 0x08, 0x10]; // DOM button index -> RustDesk button bit
@@ -91,9 +92,12 @@ function saveBlob(blob: Blob, name: string) {
 }
 
 // ---------- config ----------
-async function loadConfig(): Promise<ServerConfig> {
+/** config.json: the server (required) and, optionally, agents.matix.one for team sign-in. */
+type AppConfig = ServerConfig & { agentsUrl?: string };
+
+async function loadConfig(): Promise<AppConfig> {
   const q = new URLSearchParams(location.search);
-  let cfg: Partial<ServerConfig> = {};
+  let cfg: Partial<AppConfig> = {};
   try {
     const r = await fetch("./config.json", { cache: "no-store" });
     if (r.ok) cfg = await r.json();
@@ -103,7 +107,7 @@ async function loadConfig(): Promise<ServerConfig> {
   // Dev builds only: ?idServer=ws://host:21118&relayServer=ws://host:21119&key=...
   // Production must never take the server or its key from a link: the key is the trust anchor.
   if (import.meta.env.DEV) {
-    for (const k of ["idServer", "relayServer", "key"] as const) {
+    for (const k of ["idServer", "relayServer", "key", "agentsUrl"] as const) {
       const v = q.get(k);
       if (v) cfg[k] = v;
     }
@@ -111,15 +115,21 @@ async function loadConfig(): Promise<ServerConfig> {
   if (!cfg.idServer || !cfg.relayServer || !cfg.key || cfg.key.startsWith("REPLACE")) {
     throw new Error("The web client is not configured (config.json is missing the server addresses or key).");
   }
-  return cfg as ServerConfig;
+  return cfg as AppConfig;
 }
+
+// A ticket the agent came from (agents.matix.one "Remote control"): sessions to that device are
+// logged on it. Only set by a signed-in launch, never by a bare link.
+let launchTicket: { id: string; ticket: string } | null = null;
+const ticketFor = (peer: string) => (launchTicket && launchTicket.id === peer ? launchTicket.ticket : undefined);
+const agentLabel = (typed: string) => typed || team.agent?.full_name || "Matix Support";
 
 // ---------- connect screen ----------
 function connectScreen(cfg: ServerConfig, error = "") {
   app.replaceChildren();
   const id = h("input", { class: "field big", inputmode: "numeric", autocomplete: "off", placeholder: "123 456 789", id: "peer-id" });
   const pw = h("input", { class: "field", type: "password", autocomplete: "off", placeholder: "Leave empty to ask the customer to accept", id: "peer-pw" });
-  const agent = h("input", { class: "field", placeholder: "Your name", id: "agent" });
+  const agent = h("input", { class: "field", placeholder: team.agent?.full_name || "Your name", id: "agent" });
   agent.value = store.get("agent");
   const err = h("div", { class: "error" }, error);
   const go = h("button", { class: "btn primary wide", type: "submit" }, "Connect");
@@ -130,6 +140,7 @@ function connectScreen(cfg: ServerConfig, error = "") {
     "form",
     { class: "card" },
     h("div", { class: "brand" }, h("img", { src: "./favicon.svg", alt: "" }), h("div", {}, h("h1", {}, "Matix", h("b", {}, "Bridge")), h("p", {}, "Remote support by Matix"))),
+    teamBar(),
     h("label", { for: "peer-id" }, "Customer's MatixBridge ID"),
     id,
     h("label", { for: "peer-pw" }, "Password"),
@@ -154,8 +165,8 @@ function connectScreen(cfg: ServerConfig, error = "") {
     }
     store.set("agent", agent.value.trim());
     const filesOnly = (document.getElementById("files-only") as HTMLInputElement).checked;
-    if (filesOnly) void filesScreen(cfg, peer, pw.value, agent.value.trim() || "Matix Support");
-    else void sessionScreen(cfg, peer, pw.value, agent.value.trim() || "Matix Support");
+    if (filesOnly) void filesScreen(cfg, peer, pw.value, agentLabel(agent.value.trim()));
+    else void sessionScreen(cfg, peer, pw.value, agentLabel(agent.value.trim()));
   };
   const start = (peer: string, filesOnly: boolean) => {
     id.value = formatId(peer);
@@ -168,7 +179,29 @@ function connectScreen(cfg: ServerConfig, error = "") {
   }, start);
   app.append(h("div", { class: "connect" }, h("div", { class: "connect-grid" }, form, panel), h("div", { class: "footer" }, "MatixBridge by Matix · Sismatix Information Systems · ", h("a", { href: "https://github.com/sismatixprojects/matixbridge", target: "_blank", rel: "noopener" }, "based on RustDesk (AGPL-3.0)"))));
   if (!webCodecsAvailable()) err.textContent = "This browser cannot show remote screens (no WebCodecs). Use Chrome, Edge or Safari 16.4+.";
+  if (launchTicket) id.value = formatId(launchTicket.id);
   id.focus();
+}
+
+function teamBar(): HTMLElement {
+  const bar = h("div", { class: "team-bar" });
+  if (!team.enabled) {
+    bar.style.display = "none";
+    return bar;
+  }
+  if (team.signedIn) {
+    const out = h("button", { class: "link-btn", type: "button" }, "Sign out");
+    out.onclick = () => {
+      team.signOut();
+      location.reload();
+    };
+    bar.append(h("span", { class: "team-dot" }), h("span", {}, "Signed in as ", h("b", {}, team.agent!.full_name), team.org ? ` · ${team.org.name}` : ""), out);
+    if (launchTicket) bar.append(h("span", { class: "team-ticket" }, `Ticket #${launchTicket.ticket}: sessions to ${formatId(launchTicket.id)} are logged on it`));
+  } else {
+    const a = h("a", { class: "btn wide team-signin", href: team.signInUrl() }, "Sign in with Matix Agents");
+    bar.append(a, h("div", { class: "hint" }, "Sign in to share the customer devices list with your team and log sessions on helpdesk tickets."));
+  }
+  return bar;
 }
 
 // ---------- password prompt ----------
@@ -219,6 +252,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     const name = window.prompt("Name for this device (e.g. customer or company):", cur?.name || "");
     if (name === null) return;
     book.upsert(peerId, { name: name.trim() });
+    if (team.signedIn) team.save(peerId, { name: name.trim() }).catch((e) => toast(e.message, true));
     (title.firstChild as HTMLElement).textContent = name.trim() ? `${name.trim()} · ${formatId(peerId)}` : formatId(peerId);
     canvas.focus();
   };
@@ -309,9 +343,15 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
       /* page not focused or permission denied: ignore silently */
     }
   });
+  let teamSession = 0;
+  const endTeamSession = () => {
+    if (teamSession) void team.sessionEnd(teamSession);
+    teamSession = 0;
+  };
   session.on("closed", (reason) => {
     if (ended) return;
     ended = true;
+    endTeamSession();
     stopRecording();
     video.reset();
     releaseKeys();
@@ -324,6 +364,20 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     book.record(peerId, { host: pi.hostname, user: pi.username, platform: pi.platform });
     const saved = book.get(peerId);
     if (saved?.name) (title.firstChild as HTMLElement).textContent = `${saved.name} · ${formatId(peerId)}`;
+    if (team.signedIn) {
+      team
+        .sessionStart({ device_id: peerId, ticket_id: ticketFor(peerId), kind: "control", host: pi.hostname, user: pi.username, platform: pi.platform })
+        .then((sid) => {
+          if (ended) void team.sessionEnd(sid);
+          else teamSession = sid;
+        })
+        .then(() => team.devices())
+        .then((list) => {
+          const d = list.find((x) => x.id === peerId);
+          if (d?.name && !ended) (title.firstChild as HTMLElement).textContent = `${d.name} · ${formatId(peerId)}`;
+        })
+        .catch((e) => toast(e instanceof TeamAuthError ? e.message : `Session not logged: ${e.message}`, true));
+    }
     (title.lastChild as HTMLElement).textContent = `${pi.username || ""}@${pi.hostname || ""} · ${pi.platform}`;
     displaySel.replaceChildren();
     pi.displays.forEach((d, i) => displaySel.append(h("option", { value: String(i) }, `Display ${i + 1} (${d.width}×${d.height})`)));
@@ -662,7 +716,10 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   document.addEventListener("keyup", ku, true);
   canvas.addEventListener("blur", releaseKeys);
   window.addEventListener("blur", releaseKeys);
-  const onUnload = () => session.close("Disconnected");
+  const onUnload = () => {
+    endTeamSession();
+    session.close("Disconnected");
+  };
   window.addEventListener("beforeunload", onUnload);
   function teardown() {
     audio.close();
@@ -686,25 +743,56 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
 }
 
 // ---------- address book ----------
+// Signed in (team mode): the team's shared list from agents.matix.one; pins stay per browser.
+// Otherwise: the list kept in this browser.
 function addressBookPanel(pick: (id: string) => void, start: (id: string, filesOnly: boolean) => void): HTMLElement {
-  const search = h("input", { class: "field", placeholder: "Search name, ID or computer…", type: "search" });
+  const teamMode = team.signedIn;
+  let teamList: TeamDevice[] | null = null;
+  let teamError = "";
+  const search = h("input", { class: "field", placeholder: "Search name, ID, customer or computer…", type: "search" });
   const list = h("ul", { class: "book-list" });
   const count = h("span", { class: "book-count" });
   const addBtn = h("button", { class: "btn", type: "button", title: "Add a device without connecting" }, "+ Add");
-  const menuBtn = h("button", { class: "btn", type: "button", title: "Export or import" }, "⋯");
+  const menuBtn = h("button", { class: "btn", type: "button", title: "More" }, "⋯");
   const menu = h("div", { class: "book-menu hidden" });
   const exp = h("button", { type: "button" }, "Export to file");
   const imp = h("button", { type: "button" }, "Import from file");
+  const share = h("button", { type: "button" }, "Add this browser's devices to the team list");
   const file = h("input", { type: "file", accept: ".json,application/json" }) as HTMLInputElement;
   file.style.display = "none";
-  menu.append(exp, imp);
+  menu.append(exp);
+  if (teamMode) menu.append(share);
+  else menu.append(imp);
   menuBtn.onclick = (e) => {
     e.stopPropagation();
     menu.classList.toggle("hidden");
   };
   document.addEventListener("click", () => menu.classList.add("hidden"));
+
+  const devices = (): Device[] => {
+    if (!teamMode) return book.all();
+    const pins = new Set(book.all().filter((d) => d.fav).map((d) => d.id));
+    return (teamList || []).map((d) => ({ ...d, fav: pins.has(d.id) })).sort((a, b) => Number(b.fav) - Number(a.fav) || b.last - a.last);
+  };
+  const fail = (e: unknown) => {
+    toast(e instanceof Error ? e.message : String(e), true);
+    if (e instanceof TeamAuthError) location.reload();
+  };
+  async function refresh() {
+    if (!teamMode) return render();
+    try {
+      teamList = await team.devices();
+      teamError = "";
+    } catch (e) {
+      teamError = e instanceof Error ? e.message : String(e);
+      if (e instanceof TeamAuthError) return fail(e);
+    }
+    render();
+  }
+
   exp.onclick = () => {
-    saveBlob(new Blob([book.exportJson()], { type: "application/json" }), `MatixBridge-devices-${new Date().toISOString().slice(0, 10)}.json`);
+    const data = teamMode ? JSON.stringify({ app: "MatixBridge", version: 1, devices: devices() }, null, 2) : book.exportJson();
+    saveBlob(new Blob([data], { type: "application/json" }), `MatixBridge-devices-${new Date().toISOString().slice(0, 10)}.json`);
   };
   imp.onclick = () => file.click();
   file.onchange = async () => {
@@ -719,26 +807,42 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
       toast("That file is not a MatixBridge device list.", true);
     }
   };
-  addBtn.onclick = () => {
+  share.onclick = async () => {
+    const have = new Set((teamList || []).map((d) => d.id));
+    const mine = book.all().filter((d) => !have.has(d.id));
+    if (!mine.length) return toast("Every device in this browser is already in the team list.");
+    if (!window.confirm(`Add ${mine.length} device${mine.length === 1 ? "" : "s"} from this browser to the team list?`)) return;
+    try {
+      for (const d of mine) await team.save(d.id, { name: d.name || d.host });
+      toast(`Added ${mine.length} device${mine.length === 1 ? "" : "s"} to the team list.`);
+    } catch (e) {
+      fail(e);
+    }
+    void refresh();
+  };
+  addBtn.onclick = async () => {
     const raw = window.prompt("Device ID:");
     const did = (raw || "").replace(/\D/g, "");
     if (did.length < 6) return;
-    const name = window.prompt("Name (customer or company):", "") || "";
-    book.upsert(did, { name: name.trim() });
-    render();
+    const name = (window.prompt("Name (customer or company):", "") || "").trim();
+    if (teamMode) await team.save(did, { name }).catch(fail);
+    else book.upsert(did, { name });
+    void refresh();
   };
   search.addEventListener("input", () => render());
 
   function card(d: Device) {
+    const td = teamMode ? (d as TeamDevice) : null;
     const letter = (displayName(d).trim()[0] || "#").toUpperCase();
     const hue = [...d.id].reduce((a, c) => a + c.charCodeAt(0) * 7, 0) % 360;
     const av = h("span", { class: "book-av" }, letter);
     av.style.background = `hsl(${hue} 55% 38%)`;
     const nameEl = h("b", { class: "book-name" }, displayName(d));
-    const meta = [d.host && d.name ? d.host : "", osLabel(d.platform), d.last ? timeAgo(d.last) : "not connected yet"].filter(Boolean).join(" · ");
-    const star = h("button", { class: "icon-btn" + (d.fav ? " on" : ""), type: "button", title: d.fav ? "Unpin" : "Pin to top" }, d.fav ? "★" : "☆");
+    const seen = d.last ? `${timeAgo(d.last)}${td?.last_agent ? ` by ${td.last_agent}` : ""}` : "not connected yet";
+    const meta = [td?.client_name || "", d.host && d.name ? d.host : "", osLabel(d.platform), seen].filter(Boolean).join(" · ");
+    const star = h("button", { class: "icon-btn" + (d.fav ? " on" : ""), type: "button", title: d.fav ? "Unpin" : "Pin to top (this browser)" }, d.fav ? "★" : "☆");
     const edit = h("button", { class: "icon-btn", type: "button", title: "Rename" }, "✎");
-    const del = h("button", { class: "icon-btn", type: "button", title: "Remove" }, "🗑");
+    const del = h("button", { class: "icon-btn", type: "button", title: teamMode ? "Remove from the team list" : "Remove" }, "🗑");
     const files = h("button", { class: "icon-btn", type: "button", title: "File transfer" }, "📁");
     const connect = h("button", { class: "btn primary", type: "button" }, "Connect");
     star.onclick = (e) => {
@@ -746,19 +850,21 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
       book.upsert(d.id, { fav: !d.fav });
       render();
     };
-    edit.onclick = (e) => {
+    edit.onclick = async (e) => {
       e.stopPropagation();
       const name = window.prompt("Name for this device:", d.name);
       if (name === null) return;
       book.upsert(d.id, { name: name.trim() });
-      render();
+      if (teamMode) await team.save(d.id, { name: name.trim() }).catch(fail);
+      void refresh();
     };
-    del.onclick = (e) => {
+    del.onclick = async (e) => {
       e.stopPropagation();
-      if (window.confirm(`Remove ${displayName(d)} (${formatId(d.id)}) from your devices?`)) {
-        book.remove(d.id);
-        render();
-      }
+      const where = teamMode ? "the team list (for everyone)" : "your devices";
+      if (!window.confirm(`Remove ${displayName(d)} (${formatId(d.id)}) from ${where}?`)) return;
+      if (teamMode) await team.remove(d.id).catch(fail);
+      book.remove(d.id);
+      void refresh();
     };
     files.onclick = (e) => {
       e.stopPropagation();
@@ -768,12 +874,15 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
       e.stopPropagation();
       start(d.id, false);
     };
+    const actions = h("div", { class: "book-actions" }, star, edit, files);
+    if (!teamMode || team.canDelete) actions.append(del);
+    actions.append(connect);
     const li = h(
       "li",
-      { class: "book-item", title: "Click to fill the ID" },
+      { class: "book-item", title: td?.notes || "Click to fill the ID" },
       av,
       h("div", { class: "book-info" }, nameEl, h("span", { class: "book-id" }, formatId(d.id)), h("span", { class: "book-meta" }, meta)),
-      h("div", { class: "book-actions" }, star, edit, files, del, connect)
+      actions
     );
     li.onclick = () => pick(d.id);
     return li;
@@ -782,22 +891,34 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
   function render() {
     const q = search.value.trim().toLowerCase();
     const qd = q.replace(/\s/g, "");
-    const all = book.all();
-    const shown = all.filter((d) => !q || displayName(d).toLowerCase().includes(q) || d.host.toLowerCase().includes(q) || d.user.toLowerCase().includes(q) || (qd && d.id.includes(qd)));
+    const all = devices();
+    const hit = (d: Device) =>
+      !q ||
+      displayName(d).toLowerCase().includes(q) ||
+      d.host.toLowerCase().includes(q) ||
+      d.user.toLowerCase().includes(q) ||
+      ((d as TeamDevice).client_name || "").toLowerCase().includes(q) ||
+      (!!qd && d.id.includes(qd));
+    const shown = all.filter(hit);
     count.textContent = all.length ? String(all.length) : "";
     list.replaceChildren(...shown.map(card));
-    if (!all.length) list.append(h("li", { class: "book-empty" }, "Devices you connect to appear here, so you can reconnect in one click. Click the device name during a session to label it."));
+    if (teamMode && !teamList) list.append(h("li", { class: "book-empty" }, teamError || "Loading the team list…"));
+    else if (!all.length)
+      list.append(h("li", { class: "book-empty" }, "Devices you connect to appear here, so you can reconnect in one click. Click the device name during a session to label it."));
     else if (!shown.length) list.append(h("li", { class: "book-empty" }, "No device matches your search."));
   }
-  render();
+  void refresh();
+  const hint = teamMode
+    ? `Shared with your team${team.org ? ` at ${team.org.name}` : ""}. Pins (★) are kept in this browser.`
+    : "Saved in this browser only. Use ⋯ › Export to move the list to another computer.";
   return h(
     "section",
     { class: "card book" },
-    h("div", { class: "book-head" }, h("h2", {}, "Customer devices ", count), h("div", { class: "book-tools" }, addBtn, h("div", { class: "book-menu-wrap" }, menuBtn, menu))),
+    h("div", { class: "book-head" }, h("h2", {}, teamMode ? "Team devices " : "Customer devices ", count), h("div", { class: "book-tools" }, addBtn, h("div", { class: "book-menu-wrap" }, menuBtn, menu))),
     search,
     list,
     file,
-    h("div", { class: "hint" }, "Saved in this browser only. Use ⋯ › Export to move the list to another computer.")
+    h("div", { class: "hint" }, hint)
   );
 }
 
@@ -811,6 +932,8 @@ class FilesPanel {
   private transfers = h("div", { class: "transfers" });
   private status = h("div", { class: "hint", style: "padding:0 12px" });
   private cwd = "";
+  /** Set by the standalone file-transfer screen to log the session (not by the in-session panel). */
+  onConnected?: (pi: { hostname?: string; username?: string; platform?: string } | undefined) => void;
 
   constructor(private cfg: ServerConfig, private peerId: string, private password: string, private agentName: string, onClose: () => void) {
     const up = h("button", { class: "btn", type: "button", title: "Parent folder" }, "↑");
@@ -866,6 +989,7 @@ class FilesPanel {
       await fs.connect(this.password || undefined);
       const pi = fs.session.peerInfo;
       book.record(this.peerId, { host: pi?.hostname, user: pi?.username, platform: pi?.platform });
+      this.onConnected?.(pi ?? undefined);
       this.fs = fs;
       await this.load("");
     })().catch((e) => {
@@ -952,10 +1076,26 @@ class FilesPanel {
 
 async function filesScreen(cfg: ServerConfig, peerId: string, password: string, agentName: string) {
   app.replaceChildren();
+  let teamSession = 0;
+  const endTeamSession = () => {
+    if (teamSession) void team.sessionEnd(teamSession);
+    teamSession = 0;
+  };
   const panel = new FilesPanel(cfg, peerId, password, agentName, () => {
+    endTeamSession();
+    window.removeEventListener("beforeunload", endTeamSession);
     panel.close();
     connectScreen(cfg);
   });
+  if (team.signedIn) {
+    window.addEventListener("beforeunload", endTeamSession);
+    panel.onConnected = (pi) => {
+      team
+        .sessionStart({ device_id: peerId, ticket_id: ticketFor(peerId), kind: "files", host: pi?.hostname, user: pi?.username, platform: pi?.platform })
+        .then((sid) => (teamSession = sid))
+        .catch((e) => toast(e instanceof TeamAuthError ? e.message : `Session not logged: ${e.message}`, true));
+    };
+  }
   const wrap = h("div", { class: "connect" });
   const card = h("div", { class: "card", style: "width:min(720px,100%);height:min(80vh,720px);padding:0;display:flex;overflow:hidden" }, panel.el);
   wrap.append(card);
@@ -965,7 +1105,27 @@ async function filesScreen(cfg: ServerConfig, peerId: string, password: string, 
 
 // ---------- boot ----------
 loadConfig()
-  .then((cfg) => connectScreen(cfg))
+  .then(async (cfg) => {
+    team.init(cfg.agentsUrl);
+    // Fragment from agents.matix.one: #code=…&id=…&ticket=…&files=1. Cleared at once so the
+    // single-use code does not stay in the address bar or history.
+    const hp = new URLSearchParams(location.hash.slice(1));
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    const code = hp.get("code");
+    if (!code || !team.enabled) return connectScreen(cfg);
+    try {
+      await team.exchange(code);
+    } catch (e) {
+      return connectScreen(cfg, e instanceof Error ? e.message : String(e));
+    }
+    const peer = (hp.get("id") || "").replace(/\D/g, "");
+    if (peer.length < 6) return connectScreen(cfg);
+    const ticket = (hp.get("ticket") || "").replace(/\D/g, "");
+    if (ticket) launchTicket = { id: peer, ticket };
+    const name = agentLabel(store.get("agent"));
+    if (hp.get("files")) void filesScreen(cfg, peer, "", name);
+    else void sessionScreen(cfg, peer, "", name);
+  })
   .catch((e) => {
     app.replaceChildren(h("div", { class: "connect" }, h("div", { class: "card" }, h("h2", {}, "MatixBridge"), h("p", { class: "error" }, String(e instanceof Error ? e.message : e)))));
   });

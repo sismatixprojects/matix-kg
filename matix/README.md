@@ -52,8 +52,25 @@ npx tsx scripts/files-smoke.ts   # upload + list + download + compare
 `config.json` (served next to `index.html`):
 
 ```json
-{ "idServer": "wss://bridge.matix.one/ws/id", "relayServer": "wss://bridge.matix.one/ws/relay", "key": "<id_ed25519.pub>" }
+{ "idServer": "wss://bridge.matix.one/ws/id", "relayServer": "wss://bridge.matix.one/ws/relay", "key": "<id_ed25519.pub>",
+  "agentsUrl": "https://agents.matix.one" }
 ```
+
+`agentsUrl` is optional. When it is set, agents can **sign in with their agents.matix.one account**.
+Signing in gives them the team's shared device list and logs each session, as internal notes on the
+helpdesk ticket when the session was opened from one. Without it, the client keeps the per-browser
+device list.
+
+How sign-in works:
+- MatixBridge sends the agent to `<agentsUrl>/bridge-signin`.
+- agents.matix.one mints a single-use 120-second code and sends the agent back with
+  `#code=…` in the URL fragment.
+- The web client trades the code for a token that works only on `/api/v1/matixbridge`.
+
+The ticket page's **🖥️ Remote control** button opens `#code=…&id=<device>&ticket=<id>` the same way.
+The backend lives in the agents.matix.one repo: `backend/src/routes/matixbridge.routes.js` and
+`matixbridge_migration.sql`. Add `agentsUrl` to the production `config.json` only once that is
+deployed.
 
 CI (`.github/workflows/matix-web-e2e.yml`) starts an unmodified RustDesk peer on a virtual X
 display behind our own `hbbs`/`hbbr`, then runs:
@@ -61,6 +78,8 @@ display behind our own `hbbs`/`hbbr`, then runs:
 - the Node smoke test;
 - the file-transfer test;
 - a headless-Chromium test that checks video reaches the canvas and that typed keys change the remote screen.
+  On Linux it then opens a ticket launch (`#code=…&id=…&ticket=10`) against a stand-in for the
+  agents API and checks that the session start and end are logged.
 
 **Local testing pitfall:** bind `hbbs`/`hbbr` to a LAN IP, never `127.0.0.1`. `hbbr` treats
 TCP connections from loopback as its admin console, so a local peer's relay connection gets reset.

@@ -213,3 +213,12 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
   .toolbar .label { display: none; }
   .drawer { position: absolute; right: 0; top: 46px; bottom: 0; z-index: 10; }
 }
+
+/* team sign-in (agents.matix.one) */
+.team-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 14px 0 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); font-size: 13px; }
+.team-bar .team-signin { margin-top: 0; text-align: center; text-decoration: none; display: block; }
+.team-bar .hint { margin-top: 0; }
+.team-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px #22c55e33; }
+.team-ticket { flex-basis: 100%; color: var(--accent-3); font-size: 12px; }
+.link-btn { margin-inline-start: auto; background: none; border: 0; color: var(--accent-3); cursor: pointer; font: inherit; padding: 0; }
+.link-btn:hover { text-decoration: underline; }
