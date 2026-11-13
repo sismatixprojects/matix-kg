@@ -127,6 +127,6 @@ jobs:
           fail=0
           for apk in MatixBridge-*.apk; do
             d=$(mktemp -d); unzip -q "$apk" 'res/*' -d "$d"
-            if find "$d/res" -name '*.png' -exec sha256sum {} + | grep -q "^$want "; then echo "OK   $apk: Matix launcher icon"; else echo "FAIL $apk: Matix launcher icon not found"; fail=1; fi
+            if find "$d/res" -name '*.png' -exec sha256sum {} + | grep "^$want " >/dev/null; then echo "OK   $apk: Matix launcher icon"; else echo "FAIL $apk: Matix launcher icon not found"; fail=1; fi
           done
           exit $fail
