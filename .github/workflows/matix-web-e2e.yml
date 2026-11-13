@@ -191,12 +191,15 @@ jobs:
           npm i --no-save playwright@1.49.1
           npx playwright install chromium
 
-      - name: Start hbbs/hbbr
+      - name: Servers, peer and tests (one step)
         run: |
+          # One step on purpose: on Windows the runner kills every process a step started when
+          # the step ends, so the servers and the peer must live in the same step as the tests.
+          $ErrorActionPreference = 'Stop'
           # Throwaway runner: Windows Firewall blocks the unsigned server binaries otherwise.
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
           $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
-          "IP=$ip" | Out-File -Append $env:GITHUB_ENV
+          $env:IP = $ip; "IP=$ip" | Out-File -Append $env:GITHUB_ENV
           Invoke-WebRequest "https://github.com/rustdesk/rustdesk-server/releases/download/$env:SERVER_VERSION/rustdesk-server-windows-x86_64-unsigned.zip" -OutFile server.zip
           Expand-Archive server.zip -DestinationPath server
           $bin = (Get-ChildItem server -Recurse -Filter hbbs.exe | Select-Object -First 1).DirectoryName
@@ -206,18 +209,15 @@ jobs:
           Start-Process "$bin\hbbs.exe" -ArgumentList '-r',"$($ip):21117",'-k','_' -WorkingDirectory srv -RedirectStandardOutput srv\hbbs.log -RedirectStandardError srv\hbbs.err
           for ($i = 0; $i -lt 30 -and -not (Test-Path srv\id_ed25519.pub); $i++) { Start-Sleep 1 }
           $key = (Get-Content srv\id_ed25519.pub -Raw).Trim()
-          "KEY=$key" | Out-File -Append $env:GITHUB_ENV
+          $env:KEY = $key; "KEY=$key" | Out-File -Append $env:GITHUB_ENV
           Write-Host "server $ip key $key"
-
-      - name: Install and configure the peer (RustDesk ${{ env.RUSTDESK_VERSION }} MSI)
-        run: |
           Invoke-WebRequest "https://github.com/rustdesk/rustdesk/releases/download/$env:RUSTDESK_VERSION/rustdesk-$env:RUSTDESK_VERSION-x86_64.msi" -OutFile peer.msi
           Start-Process msiexec.exe -ArgumentList '/i','peer.msi','/qn','/l*v','msi.log' -Wait
           $exe = 'C:\Program Files\RustDesk\rustdesk.exe'
           if (-not (Test-Path $exe)) { Get-Content msi.log -Tail 40; throw "peer not installed" }
           $pw = "e2e-" + [guid]::NewGuid().ToString('N').Substring(0, 12)
           Write-Host "::add-mask::$pw"
-          "PASSWORD=$pw" | Out-File -Append $env:GITHUB_ENV
+          $env:PASSWORD = $pw
           # Run the peer ourselves (like the Linux job) instead of through the installed service,
           # with its config written directly; the service ignores CLI options until it restarts.
           Stop-Service -Name RustDesk -Force -ErrorAction SilentlyContinue
@@ -264,35 +264,31 @@ jobs:
             throw "peer never registered"
           }
           Write-Host "Peer registered as $id"
-          "ID=$id" | Out-File -Append $env:GITHUB_ENV
-
-      - name: Protocol smoke test + controls (Node)
-        working-directory: matix/web
-        env:
-          WAIT_MS: "6000"
-          CONTROLS: "1"
-        run: |
+          $env:ID = $id
+          Write-Host "=== protocol smoke + controls"
+          Push-Location matix/web
           $env:ID_SERVER = "ws://$($env:IP):21118"
           $env:RELAY_SERVER = "ws://$($env:IP):21119"
-          npx tsx scripts/smoke.ts
-
-      - name: File transfer test (Node)
-        working-directory: matix/web
-        run: |
-          $env:ID_SERVER = "ws://$($env:IP):21118"
-          $env:RELAY_SERVER = "ws://$($env:IP):21119"
-          $env:REMOTE_DIR = "C:\Windows\Temp"
-          npx tsx scripts/files-smoke.ts
-
-      - name: Browser test (headless Chromium)
-        working-directory: matix/web
-        run: |
+          $env:WAIT_MS = '6000'; $env:CONTROLS = '1'
+          npx tsx scripts/smoke.ts; if ($LASTEXITCODE) { throw 'smoke failed' }
+          Remove-Item Env:CONTROLS
+          Pop-Location
+          Write-Host "=== browser"
+          Push-Location matix/web
           '{"idServer":"ws://' + $env:IP + ':21118","relayServer":"ws://' + $env:IP + ':21119","key":"' + $env:KEY + '"}' | Out-File -Encoding ascii dist\config.json
           Start-Process npx -ArgumentList 'vite','preview','--port','4173','--strictPort','--host','127.0.0.1' -WindowStyle Hidden
           Start-Sleep 4
           $env:URL = "http://127.0.0.1:4173/"
           $env:SHOT_DIR = $env:RUNNER_TEMP
-          node scripts/browser-e2e.mjs
+          node scripts/browser-e2e.mjs; if ($LASTEXITCODE) { throw 'browser test failed' }
+          Pop-Location
+          Write-Host "=== file transfer (informational)"
+          Push-Location matix/web
+          $env:ID_SERVER = "ws://$($env:IP):21118"
+          $env:RELAY_SERVER = "ws://$($env:IP):21119"
+          $env:REMOTE_DIR = "C:\Windows\Temp"
+          npx tsx scripts/files-smoke.ts; if ($LASTEXITCODE) { Write-Host '::warning::file transfer test failed' }
+          Pop-Location
 
       - name: Logs
         if: always()
