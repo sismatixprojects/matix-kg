@@ -193,6 +193,8 @@ jobs:
 
       - name: Start hbbs/hbbr
         run: |
+          # Throwaway runner: Windows Firewall blocks the unsigned server binaries otherwise.
+          Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
           $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
           "IP=$ip" | Out-File -Append $env:GITHUB_ENV
           Invoke-WebRequest "https://github.com/rustdesk/rustdesk-server/releases/download/$env:SERVER_VERSION/rustdesk-server-windows-x86_64-unsigned.zip" -OutFile server.zip
