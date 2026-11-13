@@ -238,10 +238,21 @@ jobs:
           enable-lan-discovery = 'N'
           "@ -replace '(?m)^          ', '' | Out-File -Encoding ascii "$cfg\RustDesk2.toml"
           "password = '$pw'" | Out-File -Encoding ascii "$cfg\RustDesk.toml"
+          Write-Host "--- server sockets"
+          Get-NetUDPEndpoint -LocalPort 21116 -ErrorAction SilentlyContinue | Format-Table LocalAddress, LocalPort, OwningProcess
+          Get-NetTCPConnection -State Listen -LocalPort 21115,21116,21117,21118,21119 -ErrorAction SilentlyContinue | Format-Table LocalAddress, LocalPort
+          Get-NetFirewallProfile | Format-Table Name, Enabled
           Start-Process $exe -ArgumentList '--server' -WorkingDirectory 'C:\Program Files\RustDesk'
           Start-Process notepad.exe
           $id = ''
           for ($i = 0; $i -lt 90 -and -not $id; $i++) {
+            if ($i -eq 20) {
+              # Fallback: register over loopback in case the server only answers there.
+              Write-Host "no registration via $env:IP yet; retrying via 127.0.0.1"
+              Get-Process rustdesk -ErrorAction SilentlyContinue | Stop-Process -Force
+              (Get-Content "$cfg\RustDesk2.toml") -replace "'$($env:IP)", "'127.0.0.1" | Set-Content -Encoding ascii "$cfg\RustDesk2.toml"
+              Start-Process $exe -ArgumentList '--server' -WorkingDirectory 'C:\Program Files\RustDesk'
+            }
             Start-Sleep 2
             $m = Select-String -Path srv\hbbs.log,srv\hbbs.err -Pattern 'update_pk (\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
             if ($m) { $id = $m.Matches[0].Groups[1].Value }
