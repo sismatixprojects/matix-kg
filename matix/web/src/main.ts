@@ -1,6 +1,6 @@
 // MatixBridge web client: agent-side remote control in the browser.
 import { hbb as M } from "./proto/message.js";
-import { Session, SessionError, type ServerConfig } from "./core/session";
+import { Session, type ServerConfig } from "./core/session";
 import { FileSession, type RemoteDir, type RemoteEntry } from "./core/files";
 import { VideoSink, webCodecsAvailable } from "./ui/video";
 import { mapKey, remoteOs, type RemoteOs } from "./ui/keymap";
@@ -127,6 +127,7 @@ const agentLabel = (typed: string) => typed || team.agent?.full_name || "Matix S
 // ---------- connect screen ----------
 function connectScreen(cfg: ServerConfig, error = "") {
   app.replaceChildren();
+  if (team.enabled && !team.signedIn) return signInScreen(error);
   const id = h("input", { class: "field big", inputmode: "numeric", autocomplete: "off", placeholder: "123 456 789", id: "peer-id" });
   const pw = h("input", { class: "field", type: "password", autocomplete: "off", placeholder: "Leave empty to ask the customer to accept", id: "peer-pw" });
   const agent = h("input", { class: "field", placeholder: team.agent?.full_name || "Your name", id: "agent" });
@@ -183,25 +184,45 @@ function connectScreen(cfg: ServerConfig, error = "") {
   id.focus();
 }
 
+// With agentsUrl set, MatixBridge is for signed-in Matix staff only (the server's gate enforces it too).
+function signInScreen(error = "") {
+  const card = h(
+    "div",
+    { class: "card" },
+    h("div", { class: "brand" }, h("img", { src: "./favicon.svg", alt: "" }), h("div", {}, h("h1", {}, "Matix", h("b", {}, "Bridge")), h("p", {}, "Remote support by Matix"))),
+    h("div", { class: "team-bar" }, h("a", { class: "btn primary wide team-signin", href: team.signInUrl() }, "Sign in with Matix Agents")),
+    h("div", { class: "hint" }, "MatixBridge is for Matix support staff. Sign in with your Matix Agents account to connect to a customer."),
+    h("div", { class: "error" }, error)
+  );
+  app.append(h("div", { class: "connect" }, card, h("div", { class: "footer" }, "MatixBridge by Matix · Sismatix Information Systems · ", h("a", { href: "https://github.com/sismatixprojects/matixbridge", target: "_blank", rel: "noopener" }, "based on RustDesk (AGPL-3.0)"))));
+}
+
 function teamBar(): HTMLElement {
   const bar = h("div", { class: "team-bar" });
-  if (!team.enabled) {
+  if (!team.signedIn) {
     bar.style.display = "none";
     return bar;
   }
-  if (team.signedIn) {
-    const out = h("button", { class: "link-btn", type: "button" }, "Sign out");
-    out.onclick = () => {
-      team.signOut();
-      location.reload();
-    };
-    bar.append(h("span", { class: "team-dot" }), h("span", {}, "Signed in as ", h("b", {}, team.agent!.full_name), team.org ? ` · ${team.org.name}` : ""), out);
-    if (launchTicket) bar.append(h("span", { class: "team-ticket" }, `Ticket #${launchTicket.ticket}: sessions to ${formatId(launchTicket.id)} are logged on it`));
-  } else {
-    const a = h("a", { class: "btn wide team-signin", href: team.signInUrl() }, "Sign in with Matix Agents");
-    bar.append(a, h("div", { class: "hint" }, "Sign in to share the customer devices list with your team and log sessions on helpdesk tickets."));
-  }
+  const out = h("button", { class: "link-btn", type: "button" }, "Sign out");
+  out.onclick = () => {
+    team.signOut();
+    location.reload();
+  };
+  bar.append(h("span", { class: "team-dot" }), h("span", {}, "Signed in as ", h("b", {}, team.agent!.full_name), team.org ? ` · ${team.org.name}` : ""), out);
+  if (launchTicket) bar.append(h("span", { class: "team-ticket" }, `Ticket #${launchTicket.ticket}: sessions to ${formatId(launchTicket.id)} are logged on it`));
   return bar;
+}
+
+/** After a failed connect: if the gate refused an expired or revoked sign-in, say so (shows sign-in). */
+async function connectError(e: unknown) {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (!team.signedIn) return msg;
+  try {
+    await team.check();
+  } catch (err) {
+    if (err instanceof TeamAuthError) return err.message;
+  }
+  return msg;
 }
 
 // ---------- password prompt ----------
@@ -737,7 +758,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     if (!ended) {
       ended = true;
       teardown();
-      connectScreen(cfg, e instanceof SessionError || e instanceof Error ? e.message : String(e));
+      connectScreen(cfg, await connectError(e));
     }
   }
 }
@@ -1106,7 +1127,8 @@ async function filesScreen(cfg: ServerConfig, peerId: string, password: string, 
 // ---------- boot ----------
 loadConfig()
   .then(async (cfg) => {
-    team.init(cfg.agentsUrl);
+    // The gate cookie covers the WebSocket paths: ws(s)://host/bridge/ws/id → "/bridge/ws".
+    team.init(cfg.agentsUrl, new URL(cfg.idServer).pathname.replace(/\/[^/]*$/, "") || "/");
     // Fragment from agents.matix.one: #code=…&id=…&ticket=…&files=1. Cleared at once so the
     // single-use code does not stay in the address bar or history.
     const hp = new URLSearchParams(location.hash.slice(1));

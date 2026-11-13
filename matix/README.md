@@ -14,14 +14,14 @@ It is built on RustDesk (AGPL-3.0). The fork adds three things and leaves upstre
 | `matix/server` | Install kit for the **ID/relay server** (RustDesk `hbbs`/`hbbr`) and its TLS proxy |
 
 ```
-agent's browser ──wss──► bridge.matix.one (Cloudflare ► nginx/Apache) ──► hbbs :21118 / hbbr :21119
+agent's browser ──wss──► agents.matix.one/bridge/ws (Cloudflare ► Apache ► sign-in gate) ──► hbbs :21118 / hbbr :21119
                                                                           ▲            ▲
 customer's MatixBridge app ──tcp/udp 21115-21117──► kg-id.matix.one (DNS only) ┘            │
                         └──────────────── relayed session (always, for web) ─────────────┘
 ```
 
 A browser can only be the controlling side. Customers run the MatixBridge app; agents use
-`https://bridge.matix.one/web/`, or the app itself.
+`https://agents.matix.one/bridge/` (the customer app is receive-only).
 
 ## Web client (`matix/web`)
 
@@ -52,14 +52,14 @@ npx tsx scripts/files-smoke.ts   # upload + list + download + compare
 `config.json` (served next to `index.html`):
 
 ```json
-{ "idServer": "wss://bridge.matix.one/ws/id", "relayServer": "wss://bridge.matix.one/ws/relay", "key": "<id_ed25519.pub>",
+{ "idServer": "wss://agents.matix.one/bridge/ws/id", "relayServer": "wss://agents.matix.one/bridge/ws/relay", "key": "<id_ed25519.pub>",
   "agentsUrl": "https://agents.matix.one" }
 ```
 
-`agentsUrl` is optional. When it is set, agents can **sign in with their agents.matix.one account**.
-Signing in gives them the team's shared device list and logs each session, as internal notes on the
-helpdesk ticket when the session was opened from one. Without it, the client keeps the per-browser
-device list.
+`agentsUrl` is optional. When it is set, agents **must sign in with their agents.matix.one account**
+before they can connect. Signing in gives them the team's shared device list and logs each session,
+as internal notes on the helpdesk ticket when the session was opened from one. Without it, the
+client keeps the per-browser device list and needs no sign-in (as in the Windows CI job).
 
 How sign-in works:
 - MatixBridge sends the agent to `<agentsUrl>/bridge-signin`.
@@ -84,25 +84,60 @@ display behind our own `hbbs`/`hbbr`, then runs:
 **Local testing pitfall:** bind `hbbs`/`hbbr` to a LAN IP, never `127.0.0.1`. `hbbr` treats
 TCP connections from loopback as its admin console, so a local peer's relay connection gets reset.
 
+## Agents only
+
+Since v0.5 only signed-in Matix staff can start a session. Three parts, the first two being the lock:
+
+1. **Patched hbbs** (`matix/server/hbbs/agents-only.patch` on rustdesk-server 1.1.16): hbbs refuses
+   `PunchHoleRequest` and `RequestRelay` unless they arrive on its WebSocket port (21118). Native
+   controllers use TCP 21116, so no app can start a session, whatever its key. That includes v0.4,
+   stock RustDesk, or anything else. They get "Remote control is only available from agents.matix.one (MatixBridge)".
+   Customer apps are unaffected: they only answer on 21116 (`RelayResponse`, …) and send
+   `RequestRelay` to hbbr. The key stays the same, so installed apps keep working.
+   CI (`matix-web-e2e.yml`, job `server`) builds it static for x86_64 musl, and
+   `scripts/native-refused.ts` checks the refusal against a real peer.
+2. **Sign-in gate** (`matix/server/gate/gate.mjs`, systemd `matixbridge-gate`, 127.0.0.1:21120)
+   sits in front of 21118/21119. Apache and nginx proxy `/ws/id` and `/ws/relay` to it.
+   - The gate needs the `mb_t` cookie, which the web client sets on `/ws` after sign-in, and an
+     allowed `Origin`.
+   - It checks the cookie against agents.matix.one `GET /api/v1/matixbridge/me`, with a 60 s cache.
+     That check also refuses disabled agents and suspended organisations.
+   - It fails closed if agents.matix.one is down.
+   - It checks only when a socket opens: disabling an agent stops new sessions, not one already open.
+   - Tests: `node --test matix/server/gate/gate.test.mjs`; the Linux e2e runs the browser through it.
+3. **Receive-only customer app** (`matix/brand/apply.sh`, upstream's `conn-type=incoming`): the app
+   shows its ID and password and can be controlled, but has no "connect to" box.
+
+Known limit: anyone with a shell on the server can reach 127.0.0.1:21118 directly, which bypasses
+the gate. 21118/21119 must stay closed in the firewall.
+
 ## Production (since 2026-11-12)
 
-- **Web client:** https://bridge.matix.one/web/ (Cloudflare proxied). `kg.matix.one` 301-redirects there, but its
-  `/ws/*` paths still work. Files live in the cPanel account `kgmatix`, where `bridge.matix.one` is a parked domain,
-  under `public_html/web/`, served through the Apache include in `matix/server/apache.conf`.
+- **Web client:** https://agents.matix.one/bridge/ (since 2026-11-13; it was bridge.matix.one/web/ before).
+  - The files are in `/opt/matix-kg/web`, outside the portal's public_html, so portal deploys never touch them.
+  - Apache serves them, and proxies `/bridge/ws/*` to the gate, through
+    `matix/server/apache-agents.conf` (agentsmatix userdata include `matixbridge.conf`).
+  - `bridge.matix.one` and `kg.matix.one` (cPanel account kgmatix) only redirect there
+    (`matix/server/apache.conf`), and proxy no WebSockets.
+  - Same origin as the portal: no CORS, and signing out of the portal signs out of MatixBridge too.
 - **ID/relay server:** systemd units `matix-kg-hbbs` and `matix-kg-hbbr` on 72.52.136.5 (US). Data is in
   `/var/lib/matix-kg`, and the public key is `0sY5K0X3HCRHqb4wfySRcEk1zJTzUmeeW5n3UUMLL9c=`.
   - CSF opens TCP 21115:21117 and UDP 21116. Ports 21118/21119 are reachable only through Apache.
   - The customer app reaches the server by IP. Moving hosts means rebuilding the apps, or using a DNS-only name.
+- **Agents-only parts:**
+  - Patched hbbs: `/opt/matix-kg/bin/hbbs`. The release binary is kept as `hbbs.release-1.1.16`.
+  - Gate: `/opt/matix-kg/gate/gate.mjs` plus `/etc/systemd/system/matixbridge-gate.service`.
+  - Deploy order: gate, then the web client at /bridge/ and its Apache include, then the
+    bridge.matix.one redirect, then hbbs.
 - **Update the web client:** `npm run build`, then put the production `config.json` into `dist/`, then
-  `rsync -a --delete dist/ root@72.52.136.5:/home/kgmatix/public_html/web/` (port 522), then
-  `chown -R kgmatix:kgmatix`.
+  `rsync -a --delete dist/ root@72.52.136.5:/opt/matix-kg/web/` (port 522).
 
 ## Server (`matix/server`)
 
 1. **Host.** Any small Linux VM works. Pick one close to the customers, since web sessions
    are always relayed (a Gulf region suits Egypt).
 2. **DNS (Cloudflare).**
-   - `bridge.matix.one`: proxied (orange). Carries the web client and its WebSockets.
+   - The web host (here agents.matix.one): proxied (orange). Carries the web client and its WebSockets.
    - `kg-id.matix.one`: **DNS only (grey)**. Cloudflare does not carry ports 21115–21117 or UDP.
 3. **Install.** On the server, run `sudo ./install.sh kg-id.matix.one`. It installs
    `hbbs`/`hbbr` as systemd services and prints the public key.

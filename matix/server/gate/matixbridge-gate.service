@@ -1,0 +1,24 @@
+# /etc/systemd/system/matixbridge-gate.service — the sign-in gate (gate.mjs) in front of the
+# hbbs/hbbr WebSocket ports. Listens on 127.0.0.1:21120; Apache/nginx proxy /ws/id and /ws/relay to it.
+[Unit]
+Description=MatixBridge sign-in gate (WebSocket, in front of hbbs/hbbr)
+After=network.target matix-kg-hbbs.service matix-kg-hbbr.service
+
+[Service]
+User=matixkg
+ExecStart=/usr/bin/node /opt/matix-kg/gate/gate.mjs
+Environment=GATE_HOST=127.0.0.1
+Environment=GATE_PORT=21120
+Environment=GATE_ID_UPSTREAM=127.0.0.1:21118
+Environment=GATE_RELAY_UPSTREAM=127.0.0.1:21119
+Environment=GATE_AUTH_URL=http://127.0.0.1:3001/api/v1/matixbridge/me
+Environment=GATE_ORIGINS=https://agents.matix.one
+Restart=always
+RestartSec=2
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

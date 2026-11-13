@@ -24,7 +24,43 @@ env:
   SERVER_VERSION: "1.1.16"
 
 jobs:
+  server:
+    # hbbs with matix/server/hbbs/agents-only.patch, built static (musl) like upstream's release,
+    # so the same binary runs on the production box. The Linux e2e below runs against it.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          sparse-checkout: matix/server/hbbs
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: rustdesk/rustdesk-server
+          ref: ${{ env.SERVER_VERSION }}
+          path: rustdesk-server
+          submodules: recursive
+      - name: Apply the agents-only patch
+        working-directory: rustdesk-server
+        run: git apply --verbose ../matix/server/hbbs/agents-only.patch
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: rustdesk-server
+      - name: Build hbbs/hbbr (x86_64-unknown-linux-musl)
+        working-directory: rustdesk-server
+        run: |
+          cargo install cross --locked --version 0.2.5
+          cross build --release --all-features --target x86_64-unknown-linux-musl --bin hbbs --bin hbbr
+          mkdir -p ../out
+          cp target/x86_64-unknown-linux-musl/release/hbbs target/x86_64-unknown-linux-musl/release/hbbr ../out/
+          file ../out/*
+          (cd ../out && sha256sum hbbs hbbr | tee SHA256SUMS)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: matixbridge-server
+          path: out/
+
   e2e:
+    needs: server
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
@@ -63,12 +99,18 @@ jobs:
           unzip -o -q server.zip
           ls -R | head -20
 
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: matixbridge-server
+          path: ${{ runner.temp }}/patched
+
       - name: Start hbbs/hbbr, a virtual display and the peer
         working-directory: ${{ runner.temp }}
         run: |
           IP=$(hostname -I | awk '{print $1}')
           echo "IP=$IP" >> "$GITHUB_ENV"
-          BIN=$(cd "$(dirname "$(find . -name hbbs -type f | head -1)")" && pwd)
+          # Our patched hbbs (agents-only) and hbbr, as deployed.
+          BIN="$RUNNER_TEMP/patched"
           chmod +x "$BIN/hbbs" "$BIN/hbbr"
           mkdir -p srv && cd srv
           # Peers must reach hbbr via the runner IP, not loopback: hbbr treats loopback TCP as its admin console.
@@ -130,14 +172,23 @@ jobs:
           WAIT_MS: "6000"
         run: npx tsx scripts/smoke.ts
 
-      - name: Browser test (headless Chromium)
+      - name: Sign-in gate unit tests
+        working-directory: matix/server/gate
+        run: node --test gate.test.mjs
+
+      - name: Browser test (headless Chromium, through the sign-in gate)
         run: |
+          # As in production, the browser reaches hbbs/hbbr only through the gate, which checks the
+          # sign-in against agentsUrl's /me (here the script's stand-in for agents.matix.one).
+          GATE_ID_UPSTREAM="$IP:21118" GATE_RELAY_UPSTREAM="$IP:21119" GATE_ORIGINS="http://127.0.0.1:4173" \
+            GATE_AUTH_URL="http://127.0.0.1:39190/api/v1/matixbridge/me" GATE_PORT=21120 \
+            nohup node ../server/gate/gate.mjs > "$RUNNER_TEMP/gate.log" 2>&1 &
           # Production builds read the server and key only from config.json.
-          # agentsUrl: the script's stand-in for agents.matix.one (team sign-in and session log).
-          printf '{"idServer":"ws://%s:21118","relayServer":"ws://%s:21119","key":"%s","agentsUrl":"http://127.0.0.1:39190"}\n' "$IP" "$IP" "$KEY" > dist/config.json
+          printf '{"idServer":"ws://127.0.0.1:21120/ws/id","relayServer":"ws://127.0.0.1:21120/ws/relay","key":"%s","agentsUrl":"http://127.0.0.1:39190"}\n' "$KEY" > dist/config.json
           npx vite preview --port 4173 --strictPort --host 127.0.0.1 > preview.log 2>&1 &
           sleep 2
           URL="http://127.0.0.1:4173/" SHOT_DIR="$RUNNER_TEMP" TEAM_API_PORT=39190 node scripts/browser-e2e.mjs
+          echo "--- gate log"; cat "$RUNNER_TEMP/gate.log"
 
       - name: File transfer test (Node)
         # The peer serves file operations from its connection-manager window (a Flutter GUI),
@@ -150,11 +201,16 @@ jobs:
           REMOTE_DIR: /tmp
         run: npx tsx scripts/files-smoke.ts
 
+      - name: Native controllers are refused (agents-only hbbs)
+        env:
+          HBBR_LOG: ${{ runner.temp }}/srv/hbbr.log
+        run: npx tsx scripts/native-refused.ts
+
       - name: Logs
         if: always()
         working-directory: ${{ runner.temp }}
         run: |
-          tail -n 40 srv/hbbs.log srv/hbbr.log || true
+          tail -n 40 srv/hbbs.log srv/hbbr.log gate.log || true
           tail -n 80 peer.log || true
           find ~/.local/share/logs/RustDesk -name '*.log' -exec tail -n 60 {} \; 2>/dev/null || true
 
