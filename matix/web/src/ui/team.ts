@@ -116,10 +116,9 @@ export const team = {
     listeners.add(f);
     return () => listeners.delete(f);
   },
-  /** Where "Sign in" goes; `extra` (id, ticket, files) comes back in the fragment. */
-  signInUrl(extra: Record<string, string> = {}) {
-    const q = new URLSearchParams(extra).toString();
-    return `${base}/bridge-signin${q ? `?${q}` : ""}`;
+  /** Where "Sign in" goes. Sign-in only: agents.matix.one passes nothing back but the code. */
+  signInUrl() {
+    return `${base}/bridge-signin`;
   },
   async exchange(code: string) {
     const r = await fetch(`${base}/api/v1/matixbridge/auth/exchange`, {
