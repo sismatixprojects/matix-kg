@@ -75,6 +75,23 @@ jobs:
           Check "MatixBridge.exe has the Matix icon" ($r[0] -eq $r[1] -and [int]$r[1] -gt 0)
           if ($fail.Count) { Get-Content msi.log -Tail 30; throw "Failed: $($fail -join ', ')" }
 
+      - name: Screenshot of the customer window
+        # For a person to look at: since v0.5 the window is receive-only (ID and password, no
+        # "connect to" box).
+        run: |
+          Start-Process 'C:\Program Files\MatixBridge\MatixBridge.exe'
+          Start-Sleep 20
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save("$env:RUNNER_TEMP\matixbridge-window.png")
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-window
+          path: ${{ runner.temp }}/matixbridge-window.png
+          if-no-files-found: ignore
+
   macos-dmg:
     runs-on: macos-15
     timeout-minutes: 15
