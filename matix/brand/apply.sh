@@ -41,6 +41,18 @@ sub flutter/android/app/src/main/res/values/ic_launcher_background.xml 's/<color
 # Accept button for the connection and for voice calls, no permission icons.
 git apply --whitespace=nowarn matix/brand/cm-window.patch || { echo "brand: cm-window.patch does not apply"; exit 1; }
 
+# Forced update: the app reports its build and checks the minimum at agents.matix.one/bridge/config.json
+# ("minAppBuild"); an older app shows only an Update screen, and agents' web client refuses it.
+# The build comes from the release tag: matixbridge-v0.7 -> 7, matixbridge-v1.2 -> 102, other tags 0.
+MATIX_BUILD=0
+if [[ "${TAG_NAME:-}" =~ ^matixbridge-v([0-9]+)\.([0-9]+)$ ]]; then
+  MATIX_BUILD=$(( BASH_REMATCH[1] * 100 + BASH_REMATCH[2] ))
+fi
+git apply --whitespace=nowarn matix/brand/update-check.patch || { echo "brand: update-check.patch does not apply"; exit 1; }
+sub src/server/connection.rs "s/const MATIX_BUILD: i64 = 0;/const MATIX_BUILD: i64 = $MATIX_BUILD;/"
+sub flutter/lib/matix_update.dart "s/const int kMatixBuild = 0;/const int kMatixBuild = $MATIX_BUILD;/"
+echo "brand: MatixBridge build $MATIX_BUILD"
+
 # Icons: same paths and sizes as upstream, pre-rendered by matix/brand/gen_assets.py.
 (cd matix/brand/assets && find . -type f) | while read -r f; do
   cp "matix/brand/assets/$f" "$f"

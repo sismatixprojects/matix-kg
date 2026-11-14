@@ -107,7 +107,19 @@ function saveBlob(blob: Blob, name: string) {
 
 // ---------- config ----------
 /** config.json: the server (required) and, optionally, agents.matix.one for team sign-in. */
-type AppConfig = ServerConfig & { agentsUrl?: string };
+type AppConfig = ServerConfig & { agentsUrl?: string; minAppBuild?: number };
+
+/** Oldest customer app agents may connect to (config.json "minAppBuild"); older apps show an Update screen. */
+let minAppBuild = 0;
+/** The customer app's MatixBridge build, from its peer info (apps before v0.7 report none: 0). */
+function appBuild(pi: M.IPeerInfo): number {
+  try {
+    const n = Number(JSON.parse(pi.platform_additions || "{}").matix_build);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
 
 async function loadConfig(): Promise<AppConfig> {
   const q = new URLSearchParams(location.search);
@@ -400,6 +412,11 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   });
 
   session.on("ready", (pi) => {
+    const build = appBuild(pi);
+    if (build < minAppBuild) {
+      session.close(t("The customer's MatixBridge is out of date. Ask them to update it: their app shows an Update button, or they can download it from matixerp.com/matixbridge."));
+      return;
+    }
     os = remoteOs(pi.platform);
     book.record(peerId, { host: pi.hostname, user: pi.username, platform: pi.platform });
     const saved = book.get(peerId);
@@ -1081,6 +1098,10 @@ class FilesPanel {
       });
       await fs.connect(this.password || undefined);
       const pi = fs.session.peerInfo;
+      if (pi && appBuild(pi) < minAppBuild) {
+        fs.close();
+        throw new Error(t("The customer's MatixBridge is out of date. Ask them to update it: their app shows an Update button, or they can download it from matixerp.com/matixbridge."));
+      }
       book.record(this.peerId, { host: pi?.hostname, user: pi?.username, platform: pi?.platform });
       this.onConnected?.(pi ?? undefined);
       this.fs = fs;
@@ -1200,6 +1221,7 @@ async function filesScreen(cfg: ServerConfig, peerId: string, password: string, 
 loadConfig()
   .then(async (cfg) => {
     // The gate cookie covers the WebSocket paths: ws(s)://host/bridge/ws/id → "/bridge/ws".
+    minAppBuild = Number(cfg.minAppBuild) || 0;
     team.init(cfg.agentsUrl, new URL(cfg.idServer).pathname.replace(/\/[^/]*$/, "") || "/");
     // Fragment from agents.matix.one: #code=…&id=…&ticket=…&files=1. Cleared at once so the
     // single-use code does not stay in the address bar or history.
