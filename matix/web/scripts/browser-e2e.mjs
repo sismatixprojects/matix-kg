@@ -153,6 +153,21 @@ try {
   if (!saved || !saved.host) throw new Error("The connected device was not saved to the address book");
   console.log("BROWSER E2E OK");
 
+  // Forced update: with a minimum app build above the peer's (a stock RustDesk peer reports none),
+  // the agent is refused right after the peer answers, with the update message.
+  await page.route("**/config.json", async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { ...(await res.json()), minAppBuild: 999 } });
+  });
+  await page.goto("about:blank");
+  await page.goto(url);
+  await page.fill("#peer-id", id);
+  await page.fill("#peer-pw", password);
+  await page.click("form.card button[type=submit]");
+  await page.waitForFunction(() => /out of date/.test(document.querySelector(".error")?.textContent || ""), null, { timeout: 45000 });
+  console.log("old customer app refused:", await page.textContent(".error"));
+  await page.unroute("**/config.json");
+
   if (teamApi) {
     // Launched from a ticket in agents.matix.one: single-use code + device + ticket in the fragment.
     calls.length = 0; // the session above was logged too (signed in); check only the ticket launch

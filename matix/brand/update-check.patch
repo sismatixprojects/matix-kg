@@ -1,0 +1,188 @@
+diff --git a/flutter/lib/main.dart b/flutter/lib/main.dart
+index 09250a8..2549e59 100644
+--- a/flutter/lib/main.dart
++++ b/flutter/lib/main.dart
+@@ -16,6 +16,7 @@ import 'package:flutter_hbb/desktop/screen/desktop_port_forward_screen.dart';
+ import 'package:flutter_hbb/desktop/screen/desktop_remote_screen.dart';
+ import 'package:flutter_hbb/desktop/screen/desktop_terminal_screen.dart';
+ import 'package:flutter_hbb/desktop/widgets/refresh_wrapper.dart';
++import 'package:flutter_hbb/matix_update.dart';
+ import 'package:flutter_hbb/models/state_model.dart';
+ import 'package:flutter_hbb/utils/multi_window_manager.dart';
+ import 'package:flutter_localizations/flutter_localizations.dart';
+@@ -501,11 +502,12 @@ class _AppState extends State<App> with WidgetsBindingObserver {
+           theme: MyTheme.lightTheme,
+           darkTheme: MyTheme.darkTheme,
+           themeMode: MyTheme.currentThemeMode(),
+-          home: isDesktop
+-              ? const DesktopTabPage()
+-              : isWeb
+-                  ? WebHomePage()
+-                  : HomePage(),
++          home: MatixUpdateGate(
++              child: isDesktop
++                  ? const DesktopTabPage()
++                  : isWeb
++                      ? WebHomePage()
++                      : HomePage()),
+           localizationsDelegates: const [
+             GlobalMaterialLocalizations.delegate,
+             GlobalWidgetsLocalizations.delegate,
+diff --git a/flutter/lib/matix_update.dart b/flutter/lib/matix_update.dart
+new file mode 100644
+index 0000000..61bef03
+--- /dev/null
++++ b/flutter/lib/matix_update.dart
+@@ -0,0 +1,124 @@
++// MatixBridge forced update. The app asks agents.matix.one/bridge/config.json for "minAppBuild";
++// when its own build is older, the main window is replaced by one screen with a big Update
++// button (the download page). Agents' web client refuses older builds too, so support cannot
++// connect until the customer updates. kMatixBuild is set by matix/brand/apply.sh from the
++// release tag (matixbridge-v0.7 -> 7).
++import 'dart:async';
++import 'dart:convert';
++
++import 'package:flutter/material.dart';
++import 'package:http/http.dart' as http;
++import 'package:url_launcher/url_launcher.dart';
++
++const int kMatixBuild = 0;
++const String kMatixConfigUrl = 'https://agents.matix.one/bridge/config.json';
++const String kMatixDownloadUrl = 'https://matixerp.com/matixbridge/';
++
++final ValueNotifier<bool> matixUpdateRequired = ValueNotifier(false);
++Timer? _matixTimer;
++
++void startMatixUpdateCheck() {
++  if (_matixTimer != null) return;
++  _matixCheck();
++  _matixTimer =
++      Timer.periodic(const Duration(minutes: 30), (_) => _matixCheck());
++}
++
++Future<void> _matixCheck() async {
++  try {
++    final r = await http
++        .get(Uri.parse(kMatixConfigUrl))
++        .timeout(const Duration(seconds: 15));
++    if (r.statusCode != 200) return;
++    final j = jsonDecode(r.body);
++    final min = j is Map && j['minAppBuild'] is num
++        ? (j['minAppBuild'] as num).toInt()
++        : 0;
++    matixUpdateRequired.value = kMatixBuild < min;
++  } catch (_) {
++    // Offline or unreachable: keep the last answer.
++  }
++}
++
++/// Shows [child], or the update screen while this build is older than the minimum.
++class MatixUpdateGate extends StatelessWidget {
++  final Widget child;
++  const MatixUpdateGate({Key? key, required this.child}) : super(key: key);
++
++  @override
++  Widget build(BuildContext context) {
++    startMatixUpdateCheck();
++    return ValueListenableBuilder<bool>(
++      valueListenable: matixUpdateRequired,
++      builder: (context, required, _) =>
++          required ? const _MatixUpdateScreen() : child,
++    );
++  }
++}
++
++class _MatixUpdateScreen extends StatelessWidget {
++  const _MatixUpdateScreen({Key? key}) : super(key: key);
++
++  @override
++  Widget build(BuildContext context) {
++    return Scaffold(
++      body: Center(
++        child: SingleChildScrollView(
++          padding: const EdgeInsets.all(24),
++          child: ConstrainedBox(
++            constraints: const BoxConstraints(maxWidth: 520),
++            child: Column(
++              mainAxisSize: MainAxisSize.min,
++              children: [
++                const Text('يجب تحديث برنامج MatixBridge',
++                    textAlign: TextAlign.center,
++                    textDirection: TextDirection.rtl,
++                    style:
++                        TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
++                const SizedBox(height: 8),
++                const Text('Please update MatixBridge',
++                    textAlign: TextAlign.center,
++                    style:
++                        TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
++                const SizedBox(height: 18),
++                const Text(
++                    'هذه النسخة قديمة، ولن يتمكن الدعم الفني من الاتصال بجهازك حتى تقوم بالتحديث.',
++                    textAlign: TextAlign.center,
++                    textDirection: TextDirection.rtl,
++                    style: TextStyle(fontSize: 16)),
++                const SizedBox(height: 6),
++                const Text(
++                    'This version is out of date. Matix support cannot connect to your computer until you update.',
++                    textAlign: TextAlign.center,
++                    style: TextStyle(fontSize: 14)),
++                const SizedBox(height: 28),
++                SizedBox(
++                  width: double.infinity,
++                  height: 72,
++                  child: ElevatedButton(
++                    style: ElevatedButton.styleFrom(
++                      backgroundColor: Colors.green[700],
++                      foregroundColor: Colors.white,
++                      shape: RoundedRectangleBorder(
++                          borderRadius: BorderRadius.circular(14)),
++                    ),
++                    onPressed: () => launchUrl(Uri.parse(kMatixDownloadUrl),
++                        mode: LaunchMode.externalApplication),
++                    child: const Text('تحديث الآن  /  Update now',
++                        style: TextStyle(
++                            fontSize: 24, fontWeight: FontWeight.bold)),
++                  ),
++                ),
++                const SizedBox(height: 14),
++                const Text(
++                    'بعد تنزيل النسخة الجديدة وتثبيتها، افتح البرنامج مرة أخرى.\nAfter installing the new version, open MatixBridge again.',
++                    textAlign: TextAlign.center,
++                    style: TextStyle(fontSize: 13)),
++              ],
++            ),
++          ),
++        ),
++      ),
++    );
++  }
++}
+diff --git a/src/server/connection.rs b/src/server/connection.rs
+index 4b2eec8..74b42d2 100644
+--- a/src/server/connection.rs
++++ b/src/server/connection.rs
+@@ -55,6 +55,9 @@ use scrap::android::{call_main_service_key_event, call_main_service_pointer_inpu
+ use scrap::camera;
+ use serde_derive::Serialize;
+ use serde_json::{json, value::Value};
++
++/// Set by matix/brand/apply.sh from the release tag (matixbridge-v0.7 -> 7).
++const MATIX_BUILD: i64 = 0;
+ use std::{
+     collections::HashSet,
+     net::{IpAddr, Ipv6Addr},
+@@ -2028,6 +2031,13 @@ impl Connection {
+         if !platform_additions.is_empty() {
+             pi.platform_additions = serde_json::to_string(&platform_additions).unwrap_or("".into());
+         }
++        // MatixBridge: the app's build, so agents' web client can refuse one older than the minimum.
++        {
++            let mut extra: serde_json::Map<String, Value> =
++                serde_json::from_str(&pi.platform_additions).unwrap_or_default();
++            extra.insert("matix_build".into(), json!(MATIX_BUILD));
++            pi.platform_additions = serde_json::to_string(&extra).unwrap_or_default();
++        }
+ 
+         if self.is_port_forward() {
+             pi.features = Some(Features {

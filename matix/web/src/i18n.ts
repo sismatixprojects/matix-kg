@@ -165,6 +165,8 @@ const AR: Record<string, string> = {
     "النافذة المفتوحة لدى العميل تحتاج صلاحيات المسؤول. استخدم المزيد ▾ › طلب صلاحيات المسؤول.",
   "Recording started. Click Record again to stop and save.": "بدأ التسجيل. اضغط «تسجيل» مرة أخرى للإيقاف والحفظ.",
   Disconnected: "انقطع الاتصال",
+  "The customer's MatixBridge is out of date. Ask them to update it: their app shows an Update button, or they can download it from matixerp.com/matixbridge.":
+    "برنامج MatixBridge لدى العميل قديم. اطلب منه تحديثه: سيظهر له زر «تحديث الآن» في البرنامج، أو يحمّله من matixerp.com/matixbridge.",
   // address book
   "Search name, ID, customer or computer…": "ابحث بالاسم أو الرقم أو العميل أو الجهاز…",
   "Add a device without connecting": "إضافة جهاز بدون اتصال",

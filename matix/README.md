@@ -131,6 +131,12 @@ the gate. 21118/21119 must stay closed in the firewall.
     bridge.matix.one redirect, then hbbs.
 - **Update the web client:** `npm run build`, then put the production `config.json` into `dist/`, then
   `rsync -a --delete dist/ root@72.52.136.5:/opt/matix-kg/web/` (port 522).
+- **Forced update:** each app from v0.7 knows its build (`matixbridge-v0.7` → 7, `v1.2` → 102; set by
+  `apply.sh` from the release tag). `"minAppBuild"` in the production `/opt/matix-kg/web/config.json`
+  is the oldest build allowed. An older app shows only a «يجب تحديث / Update now» screen, which opens
+  the download page. The agents' web client refuses older apps, and so does file transfer. Apps
+  before v0.7 report no build, so they count as 0. To force a release: publish it on the download page
+  first, then raise `minAppBuild` to its build. No rebuild is needed.
 
 ## Server (`matix/server`)
 
