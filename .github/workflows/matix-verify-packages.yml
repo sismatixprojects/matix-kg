@@ -110,6 +110,10 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+          # Not 127.0.0.1: hbbr treats a TCP connection from loopback as its admin console, so the
+          # app's relay link would be refused (the same reason the web e2e uses the runner's address).
+          $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
+          Write-Host "server address $ip"
           Push-Location src/matix/web
           npm ci --no-audit --no-fund | Out-Null
           npm run proto
@@ -121,7 +125,7 @@ jobs:
           New-Item -ItemType Directory srv | Out-Null
           Start-Process "$bin\hbbr.exe" -ArgumentList '-k','_' -WorkingDirectory srv -WindowStyle Hidden -RedirectStandardOutput srv\hbbr.log -RedirectStandardError srv\hbbr.err
           Start-Sleep 2
-          Start-Process "$bin\hbbs.exe" -ArgumentList '-r','127.0.0.1:21117','-k','_' -WorkingDirectory srv -WindowStyle Hidden -RedirectStandardOutput srv\hbbs.log -RedirectStandardError srv\hbbs.err
+          Start-Process "$bin\hbbs.exe" -ArgumentList '-r',"$($ip):21117",'-k','_' -WorkingDirectory srv -WindowStyle Hidden -RedirectStandardOutput srv\hbbs.log -RedirectStandardError srv\hbbs.err
           for ($i = 0; $i -lt 30 -and -not (Test-Path srv\id_ed25519.pub); $i++) { Start-Sleep 1 }
           $key = (Get-Content srv\id_ed25519.pub -Raw).Trim()
           # Run the app ourselves against the local server, with a known password.
@@ -131,13 +135,13 @@ jobs:
           New-Item -ItemType Directory -Force $cfg | Out-Null
           $pw = "v-" + [guid]::NewGuid().ToString('N').Substring(0, 12)
           @"
-          rendezvous_server = '127.0.0.1:21116'
+          rendezvous_server = '$($ip):21116'
           nat_type = 1
           serial = 0
 
           [options]
-          custom-rendezvous-server = '127.0.0.1'
-          relay-server = '127.0.0.1'
+          custom-rendezvous-server = '$ip'
+          relay-server = '$ip'
           key = '$key'
           approve-mode = 'both'
           verification-method = 'use-permanent-password'
@@ -163,7 +167,7 @@ jobs:
             Write-Host "saved $name"
           }
           # The test client inherits these; it runs directly (no nested shell) with its output kept.
-          $env:ID = $id; $env:ID_SERVER = 'ws://127.0.0.1:21118'; $env:RELAY_SERVER = 'ws://127.0.0.1:21119'; $env:KEY = $key; $env:WAIT_MS = '40000'
+          $env:ID = $id; $env:ID_SERVER = "ws://$($ip):21118"; $env:RELAY_SERVER = "ws://$($ip):21119"; $env:KEY = $key; $env:WAIT_MS = '40000'
           $web = (Resolve-Path src/matix/web).Path
           $tsx = Join-Path $web 'node_modules\tsx\dist\cli.mjs'
           if (-not (Test-Path $tsx)) { throw "tsx not installed at $tsx" }
