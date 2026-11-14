@@ -6,6 +6,7 @@ import { VideoSink, webCodecsAvailable } from "./ui/video";
 import { mapKey, remoteOs, type RemoteOs } from "./ui/keymap";
 import { book, displayName, osLabel, timeAgo, type Device } from "./ui/addressbook";
 import { AudioPlayer } from "./ui/audio";
+import { MicSender } from "./ui/voice";
 import { team, TeamAuthError, type TeamDevice } from "./ui/team";
 import { applyLang, devices as nDevices, lang, setLang, t } from "./i18n";
 
@@ -48,6 +49,7 @@ const ICONS: Record<string, string> = {
   fit: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 12h8M12 8v8"/>',
   close: '<path d="M18 6 6 18M6 6l12 12"/>',
   type: '<path d="M4 7V5h16v2M9 19h6M12 5v14"/>',
+  phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
 };
 function icon(name: string) {
   const span = document.createElement("span");
@@ -305,6 +307,8 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const viewSel = h("select", { title: t("View") });
   for (const [v, l] of [["fit", "Whole screen"], ["actual", "Original size"]]) viewSel.append(h("option", { value: v }, t(l)));
   const bView = h("label", { class: "tb", title: t("View") }, icon("fit"), viewSel);
+  const bCall = tb("phone", t("Voice call"), t("Talk with the customer (they accept on their screen)"));
+  bCall.classList.add("call");
   const bChat = tb("chat", t("Chat"));
   const chatBadge = h("span", { class: "badge hidden" }, "1");
   bChat.append(chatBadge);
@@ -319,7 +323,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const moreWrap = h("div", { class: "tb-menu-wrap" }, bMore, moreMenu);
   bClose.classList.add("danger");
 
-  const toolbar = h("div", { class: "toolbar" }, h("div", { class: "tb-brand", title: "MatixBridge by Matix" }, h("img", { src: "./favicon.svg", alt: "MatixBridge" })), title, bDisplay, bQuality, bView, bCad, bLock, bRefresh, bType, bClip, moreWrap, h("div", { class: "spacer" }), bChat, bFiles, bRec, bFull, bClose);
+  const toolbar = h("div", { class: "toolbar" }, h("div", { class: "tb-brand", title: "MatixBridge by Matix" }, h("img", { src: "./favicon.svg", alt: "MatixBridge" })), title, bDisplay, bQuality, bView, bCad, bLock, bRefresh, bType, bClip, moreWrap, h("div", { class: "spacer" }), bCall, bChat, bFiles, bRec, bFull, bClose);
   const root = h("div", { class: "session" }, toolbar, h("div", { class: "body" }, stage, drawerHost));
   app.append(root);
   statusBox(overlay, t("Connecting…"));
@@ -585,6 +589,53 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     moreMenu.classList.toggle("hidden");
   };
   document.addEventListener("click", () => moreMenu.classList.add("hidden"));
+  // ---- voice call: our microphone to the customer, theirs back through the remote sound ----
+  const mic = new MicSender();
+  let call: "idle" | "ringing" | "on" = "idle";
+  const callLabel = bCall.querySelector(".label")!;
+  function setCall(state: typeof call) {
+    call = state;
+    bCall.classList.toggle("on", state !== "idle");
+    callLabel.textContent = t(state === "idle" ? "Voice call" : state === "ringing" ? "Calling…" : "End call");
+  }
+  bCall.onclick = async () => {
+    if (call !== "idle") {
+      mic.stop();
+      session.endVoiceCall();
+      setCall("idle");
+      toast(t("Call ended"), false, 2000);
+      canvas.focus();
+      return;
+    }
+    if (!MicSender.available() || !AudioPlayer.available()) return toast(t("This browser cannot make voice calls. Use Chrome or Edge."), true);
+    try {
+      await mic.prepare(); // inside the click: the browser's microphone prompt, and audio allowed to start
+    } catch {
+      return toast(t("Microphone access was refused. Allow it in the address bar."), true);
+    }
+    audio.unlock();
+    session.requestVoiceCall();
+    setCall("ringing");
+    toast(t("Calling the customer… They must accept on their screen."), false, 6000);
+    canvas.focus();
+  };
+  session.on("voiceCall", (state) => {
+    if (state === "accepted") {
+      if (call === "idle") return;
+      setCall("on");
+      if (!ctl.sound) {
+        ctl.sound = true;
+        session.setAudio(true);
+      }
+      mic.start((rate, ch) => session.sendAudioFormat(rate, ch), (d) => session.sendAudio(d));
+      toast(t("Call connected. Use a headset to avoid echo."), false, 4000);
+      return;
+    }
+    if (call === "idle") return;
+    mic.stop();
+    setCall("idle");
+    toast(t(state === "refused" ? "The customer declined the call" : "The customer ended the call"), state === "refused");
+  });
   session.on("audioFormat", (rate, ch) => audio.configure(rate, ch));
   session.on("audio", (d) => {
     if (ctl.sound) audio.push(d);
@@ -762,6 +813,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   window.addEventListener("beforeunload", onUnload);
   function teardown() {
     audio.close();
+    mic.stop();
     document.removeEventListener("keydown", kd, true);
     document.removeEventListener("keyup", ku, true);
     window.removeEventListener("blur", releaseKeys);
