@@ -43,6 +43,11 @@ try {
   await session.connect(process.env.PASSWORD);
   console.log(`logged in after ${Date.now() - t0} ms`);
   if (process.env.CHAT) session.chat(process.env.CHAT);
+  if (process.env.VOICE) {
+    // Rings the customer's app (its accept-call prompt); for the package check's screenshot.
+    session.on("voiceCall", (s) => console.log("voice call:", s));
+    session.requestVoiceCall();
+  }
   if (process.env.CONTROLS) {
     // Exercise the More-menu controls and print what the peer answers.
     const notices: string[] = [];

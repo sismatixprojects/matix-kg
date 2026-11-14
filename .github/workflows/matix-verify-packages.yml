@@ -17,7 +17,7 @@ permissions:
 jobs:
   windows-msi:
     runs-on: windows-2022
-    timeout-minutes: 15
+    timeout-minutes: 25
     defaults:
       run:
         shell: pwsh
@@ -25,7 +25,9 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           path: src
-          sparse-checkout: matix/brand
+          sparse-checkout: |
+            matix/brand
+            matix/web
       - name: Install the MSI and check the result
         env:
           GH_TOKEN: ${{ github.token }}
@@ -90,6 +92,91 @@ jobs:
         with:
           name: windows-window
           path: ${{ runner.temp }}/matixbridge-window.png
+          if-no-files-found: ignore
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: 22
+      - name: Screenshots of the accept prompts (connection and voice call)
+        # For a person to look at: the installed app, pointed at a local server, is asked to accept
+        # a connection (no password) and then a voice call. Informational: never fails the job.
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          SERVER_VERSION: "1.1.16"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+          Push-Location src/matix/web
+          npm ci --no-audit --no-fund | Out-Null
+          Pop-Location
+          Invoke-WebRequest "https://github.com/rustdesk/rustdesk-server/releases/download/$env:SERVER_VERSION/rustdesk-server-windows-x86_64-unsigned.zip" -OutFile server.zip
+          Expand-Archive server.zip -DestinationPath server
+          $bin = (Get-ChildItem server -Recurse -Filter hbbs.exe | Select-Object -First 1).DirectoryName
+          New-Item -ItemType Directory srv | Out-Null
+          Start-Process "$bin\hbbr.exe" -ArgumentList '-k','_' -WorkingDirectory srv
+          Start-Sleep 2
+          Start-Process "$bin\hbbs.exe" -ArgumentList '-r','127.0.0.1:21117','-k','_' -WorkingDirectory srv -RedirectStandardOutput srv\hbbs.log -RedirectStandardError srv\hbbs.err
+          for ($i = 0; $i -lt 30 -and -not (Test-Path srv\id_ed25519.pub); $i++) { Start-Sleep 1 }
+          $key = (Get-Content srv\id_ed25519.pub -Raw).Trim()
+          # Run the app ourselves against the local server, with a known password.
+          Stop-Service -Name MatixBridge -Force -ErrorAction SilentlyContinue
+          Get-Process MatixBridge -ErrorAction SilentlyContinue | Stop-Process -Force
+          $cfg = "$env:APPDATA\MatixBridge\config"
+          New-Item -ItemType Directory -Force $cfg | Out-Null
+          $pw = "v-" + [guid]::NewGuid().ToString('N').Substring(0, 12)
+          @"
+          rendezvous_server = '127.0.0.1:21116'
+          nat_type = 1
+          serial = 0
+
+          [options]
+          custom-rendezvous-server = '127.0.0.1'
+          relay-server = '127.0.0.1'
+          key = '$key'
+          approve-mode = 'both'
+          verification-method = 'use-permanent-password'
+          enable-lan-discovery = 'N'
+          "@ -replace '(?m)^          ', '' | Out-File -Encoding ascii "$cfg\MatixBridge2.toml"
+          "password = '$pw'" | Out-File -Encoding ascii "$cfg\MatixBridge.toml"
+          $exe = 'C:\Program Files\MatixBridge\MatixBridge.exe'
+          Start-Process $exe -ArgumentList '--server' -WorkingDirectory 'C:\Program Files\MatixBridge'
+          $id = ''
+          for ($i = 0; $i -lt 60 -and -not $id; $i++) {
+            Start-Sleep 2
+            $m = Select-String -Path srv\hbbs.log,srv\hbbs.err -Pattern 'update_pk (\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
+            if ($m) { $id = $m.Matches[0].Groups[1].Value }
+          }
+          if (-not $id) { Get-Content srv\hbbs.log,srv\hbbs.err -Tail 30; throw "the app never registered with the local server" }
+          Write-Host "app registered as $id"
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          function Shot($name) {
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("$env:RUNNER_TEMP\$name")
+            Write-Host "saved $name"
+          }
+          $common = "`$env:ID='$id'; `$env:ID_SERVER='ws://127.0.0.1:21118'; `$env:RELAY_SERVER='ws://127.0.0.1:21119'; `$env:KEY='$key'; `$env:WAIT_MS='40000'"
+          # 1. No password: the customer is asked to accept the connection.
+          $p1 = Start-Process pwsh -PassThru -WorkingDirectory src/matix/web -ArgumentList '-NoProfile','-Command',"$common; npx tsx scripts/smoke.ts *> ..\..\..\smoke-accept.log"
+          Start-Sleep 20
+          Shot 'accept-connection.png'
+          Stop-Process -Id $p1.Id -Force -ErrorAction SilentlyContinue
+          Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep 8
+          # 2. With the password, then a voice call: the customer is asked to accept the call.
+          $p2 = Start-Process pwsh -PassThru -WorkingDirectory src/matix/web -ArgumentList '-NoProfile','-Command',"$common; `$env:PASSWORD='$pw'; `$env:VOICE='1'; npx tsx scripts/smoke.ts *> ..\..\..\smoke-voice.log"
+          Start-Sleep 25
+          Shot 'accept-voice-call.png'
+          Stop-Process -Id $p2.Id -Force -ErrorAction SilentlyContinue
+          Get-Content smoke-accept.log, smoke-voice.log -ErrorAction SilentlyContinue
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-accept-prompts
+          path: |
+            ${{ runner.temp }}/accept-connection.png
+            ${{ runner.temp }}/accept-voice-call.png
           if-no-files-found: ignore
 
   macos-dmg:

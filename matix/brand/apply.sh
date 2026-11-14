@@ -37,6 +37,10 @@ sub flutter/ios/Runner/Info.plist 's#(<key>CFBundleDisplayName</key>\s*<string>)
 # Android adaptive icon: our foreground is the white Matix mark, so the tile is Matix cyan.
 sub flutter/android/app/src/main/res/values/ic_launcher_background.xml 's/<color name="ic_launcher_background">#ffffff<\/color>/<color name="ic_launcher_background">#06b6d4<\/color>/'
 
+# The window the customer answers (connection manager): big, centred, one clear Arabic/English
+# Accept button for the connection and for voice calls, no permission icons.
+git apply --whitespace=nowarn matix/brand/cm-window.patch || { echo "brand: cm-window.patch does not apply"; exit 1; }
+
 # Icons: same paths and sizes as upstream, pre-rendered by matix/brand/gen_assets.py.
 (cd matix/brand/assets && find . -type f) | while read -r f; do
   cp "matix/brand/assets/$f" "$f"
