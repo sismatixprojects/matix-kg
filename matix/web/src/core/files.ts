@@ -3,6 +3,7 @@
 import { hbb as M } from "../proto/message.js";
 import { Session, type ServerConfig } from "./session";
 import { decompress } from "./zstd";
+import { t } from "../i18n";
 
 export interface RemoteEntry {
   name: string;
@@ -101,7 +102,7 @@ export class FileSession {
       };
       const timer = setTimeout(() => {
         this.dirWaiters = this.dirWaiters.filter((w) => w !== waiter);
-        reject(new Error("The remote side did not list the folder"));
+        reject(new Error(t("The remote side did not list the folder")));
       }, 15000);
       this.dirWaiters.push(waiter);
       this.session.send({ file_action: { read_dir: { path, include_hidden: includeHidden } } });
@@ -143,7 +144,7 @@ export class FileSession {
         const decision = Promise.race([
           new Promise<number | "skip">((resolve) => job.confirm.set(i, resolve)),
           failed,
-          timeout(30000, `No answer from the remote side for ${f.name}`),
+          timeout(30000, t("No answer from the remote side for {name}", { name: f.name })),
         ]);
         this.session.send({
           file_response: {
@@ -211,7 +212,7 @@ export class FileSession {
       if (!b.data?.length) return; // end-of-file marker
       const data = b.compressed ? await decompress(b.data) : b.data;
       if (!data) {
-        job.reject(new Error("A file block could not be decompressed"));
+        job.reject(new Error(t("A file block could not be decompressed")));
         this.jobs.delete(b.id);
         return;
       }
@@ -232,7 +233,7 @@ export class FileSession {
     if (r.error) {
       const fe = r.error as M.FileTransferError;
       const job = this.jobs.get(fe.id);
-      const err = new Error(fe.error || "File transfer failed");
+      const err = new Error(fe.error || t("File transfer failed"));
       if (job) {
         job.reject(err);
         this.jobs.delete(fe.id);

@@ -62,7 +62,17 @@ const litPixels = () =>
   });
 
 try {
+  // Arabic is the default: a first visit reads right to left, in Arabic.
   await page.goto(url);
+  await page.waitForSelector(".lang-switch");
+  const first = await page.evaluate(() => ({ dir: document.documentElement.dir, lang: document.documentElement.lang, text: document.body.innerText }));
+  if (first.dir !== "rtl" || first.lang !== "ar" || !/الدعم الفني عن بُعد/.test(first.text)) throw new Error(`Not Arabic by default: ${JSON.stringify({ dir: first.dir, lang: first.lang })}`);
+  console.log("first visit: Arabic, right to left");
+  // The checks below read English text: switch with the button, which is remembered.
+  await page.click(".lang-switch");
+  await page.waitForFunction(() => document.documentElement.lang === "en");
+  await page.goto(url);
+  if ((await page.evaluate(() => document.documentElement.dir)) !== "ltr") throw new Error("The English choice was not remembered");
   if (teamApi) {
     // agentsUrl set: signing in is required, and the server's gate (in front of the ID and relay
     // WebSocket ports here, as in production) lets the browser through only with the sign-in cookie.

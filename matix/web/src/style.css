@@ -48,7 +48,7 @@ button { cursor: pointer; }
 .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
 .brand h1 b { background: linear-gradient(135deg, var(--accent), var(--accent-3), #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .footer a { color: var(--muted); }
-.tb-brand { display: flex; align-items: center; gap: 8px; margin-right: 6px; }
+.tb-brand { display: flex; align-items: center; gap: 8px; margin-inline-end: 6px; }
 .tb-brand img { width: 26px; height: 26px; }
 label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
 .field {
@@ -90,8 +90,8 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
 .book-tools { display: flex; gap: 6px; }
 .book-tools .btn { padding: 6px 10px; }
 .book-menu-wrap { position: relative; }
-.book-menu { position: absolute; right: 0; top: 110%; z-index: 5; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 4px; min-width: 170px; box-shadow: 0 12px 30px #0008; }
-.book-menu button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: 6px; }
+.book-menu { position: absolute; inset-inline-end: 0; top: 110%; z-index: 5; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 4px; min-width: 170px; box-shadow: 0 12px 30px #0008; }
+.book-menu button { display: block; width: 100%; text-align: start; background: none; border: 0; padding: 8px 10px; border-radius: 6px; }
 .book-menu button:hover { background: #ffffff10; }
 .book-list { list-style: none; margin: 0; padding: 0; max-height: 52vh; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
 .book-item { display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); cursor: pointer; }
@@ -102,7 +102,7 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
 .book-id { font-size: 12px; color: var(--accent-3); font-variant-numeric: tabular-nums; letter-spacing: .5px; }
 .book-meta { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .book-actions { display: flex; align-items: center; gap: 2px; }
-.book-actions .btn { padding: 6px 12px; margin-left: 4px; }
+.book-actions .btn { padding: 6px 12px; margin-inline-start: 4px; }
 .icon-btn { background: none; border: 1px solid transparent; border-radius: 8px; width: 30px; height: 30px; color: var(--muted); font-size: 14px; }
 .icon-btn:hover { border-color: var(--line); color: var(--text); }
 .icon-btn.on { color: #fbbf24; }
@@ -117,7 +117,7 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
   padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line);
   min-height: 46px;
 }
-.toolbar .title { display: flex; flex-direction: column; margin-right: 8px; min-width: 0; }
+.toolbar .title { display: flex; flex-direction: column; margin-inline-end: 8px; min-width: 0; }
 .toolbar .title b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .toolbar .title span { font-size: 11px; color: var(--muted); }
 .toolbar .spacer { flex: 1; }
@@ -132,8 +132,8 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
 .tb svg { width: 16px; height: 16px; }
 .tb select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
 .tb-menu-wrap { position: relative; }
-.tb-menu { position: absolute; top: 110%; left: 0; z-index: 20; min-width: 320px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 18px 40px #000a; }
-.tb-menu button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 9px 10px; border-radius: 8px; font-size: 13px; }
+.tb-menu { position: absolute; top: 110%; inset-inline-start: 0; z-index: 20; min-width: 320px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 18px 40px #000a; }
+.tb-menu button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: start; background: none; border: 0; padding: 9px 10px; border-radius: 8px; font-size: 13px; }
 .tb-menu button:hover:not([disabled]) { background: var(--panel-2); }
 .tb-menu button[disabled] { opacity: .45; cursor: default; }
 .tb-menu .ck-mark { width: 16px; color: var(--ok); font-weight: 700; }
@@ -162,7 +162,7 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .drawer {
-  width: 340px; max-width: 90vw; background: var(--panel); border-left: 1px solid var(--line);
+  width: 340px; max-width: 90vw; background: var(--panel); border-inline-start: 1px solid var(--line);
   display: flex; flex-direction: column; min-height: 0;
 }
 .drawer header {
@@ -211,7 +211,7 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
 }
 @media (max-width: 720px) {
   .toolbar .label { display: none; }
-  .drawer { position: absolute; right: 0; top: 46px; bottom: 0; z-index: 10; }
+  .drawer { position: absolute; inset-inline-end: 0; top: 46px; bottom: 0; z-index: 10; }
 }
 
 /* team sign-in (agents.matix.one) */
@@ -222,3 +222,8 @@ label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px
 .team-ticket { flex-basis: 100%; color: var(--accent-3); font-size: 12px; }
 .link-btn { margin-inline-start: auto; background: none; border: 0; color: var(--accent-3); cursor: pointer; font: inherit; padding: 0; }
 .link-btn:hover { text-decoration: underline; }
+
+/* Language switch (عربي / English) beside the brand; Arabic is the default and reads right to left. */
+.brand .lang-switch { margin-inline-start: auto; align-self: flex-start; font-size: 13px; }
+[dir="rtl"] body { font-family: "Noto Kufi Arabic", "Sora", "Segoe UI", system-ui, -apple-system, sans-serif; }
+[dir="rtl"] #peer-id { text-align: right; }

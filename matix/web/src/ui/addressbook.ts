@@ -1,5 +1,6 @@
 // Address book: customer devices this agent has connected to, kept in this browser.
 // No passwords are stored; reconnecting asks the customer to accept (or for the password) again.
+import { t } from "../i18n";
 
 export interface Device {
   id: string;
@@ -103,13 +104,13 @@ export function displayName(d: Device): string {
 }
 
 export function timeAgo(ms: number): string {
-  if (!ms) return "never";
+  if (!ms) return t("never");
   const s = Math.max(0, (Date.now() - ms) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 60) return t("just now");
+  if (s < 3600) return t("{n} min ago", { n: Math.floor(s / 60) });
+  if (s < 86400) return t("{n} h ago", { n: Math.floor(s / 3600) });
   const days = Math.floor(s / 86400);
-  if (days < 30) return `${days} day${days > 1 ? "s" : ""} ago`;
+  if (days < 30) return days === 1 ? t("1 day ago") : t("{n} days ago", { n: days });
   return new Date(ms).toLocaleDateString();
 }
 
