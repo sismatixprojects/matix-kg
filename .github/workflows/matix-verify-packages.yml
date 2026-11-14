@@ -114,9 +114,9 @@ jobs:
           Expand-Archive server.zip -DestinationPath server
           $bin = (Get-ChildItem server -Recurse -Filter hbbs.exe | Select-Object -First 1).DirectoryName
           New-Item -ItemType Directory srv | Out-Null
-          Start-Process "$bin\hbbr.exe" -ArgumentList '-k','_' -WorkingDirectory srv
+          Start-Process "$bin\hbbr.exe" -ArgumentList '-k','_' -WorkingDirectory srv -WindowStyle Hidden -RedirectStandardOutput srv\hbbr.log -RedirectStandardError srv\hbbr.err
           Start-Sleep 2
-          Start-Process "$bin\hbbs.exe" -ArgumentList '-r','127.0.0.1:21117','-k','_' -WorkingDirectory srv -RedirectStandardOutput srv\hbbs.log -RedirectStandardError srv\hbbs.err
+          Start-Process "$bin\hbbs.exe" -ArgumentList '-r','127.0.0.1:21117','-k','_' -WorkingDirectory srv -WindowStyle Hidden -RedirectStandardOutput srv\hbbs.log -RedirectStandardError srv\hbbs.err
           for ($i = 0; $i -lt 30 -and -not (Test-Path srv\id_ed25519.pub); $i++) { Start-Sleep 1 }
           $key = (Get-Content srv\id_ed25519.pub -Raw).Trim()
           # Run the app ourselves against the local server, with a known password.
@@ -157,20 +157,24 @@ jobs:
             $bmp.Save("$env:RUNNER_TEMP\$name")
             Write-Host "saved $name"
           }
-          $common = "`$env:ID='$id'; `$env:ID_SERVER='ws://127.0.0.1:21118'; `$env:RELAY_SERVER='ws://127.0.0.1:21119'; `$env:KEY='$key'; `$env:WAIT_MS='40000'"
+          # The test client inherits these; it runs directly (no nested shell) with its output kept.
+          $env:ID = $id; $env:ID_SERVER = 'ws://127.0.0.1:21118'; $env:RELAY_SERVER = 'ws://127.0.0.1:21119'; $env:KEY = $key; $env:WAIT_MS = '40000'
+          $web = (Resolve-Path src/matix/web).Path
+          $tsx = Join-Path $web 'node_modules\tsx\dist\cli.mjs'
+          if (-not (Test-Path $tsx)) { throw "tsx not installed at $tsx" }
           # 1. No password: the customer is asked to accept the connection.
-          $p1 = Start-Process pwsh -PassThru -WorkingDirectory src/matix/web -ArgumentList '-NoProfile','-Command',"$common; npx tsx scripts/smoke.ts *> ..\..\..\smoke-accept.log"
+          $p1 = Start-Process node -PassThru -WindowStyle Hidden -WorkingDirectory $web -ArgumentList $tsx,'scripts/smoke.ts' -RedirectStandardOutput smoke-accept.log -RedirectStandardError smoke-accept.err
           Start-Sleep 20
           Shot 'accept-connection.png'
           Stop-Process -Id $p1.Id -Force -ErrorAction SilentlyContinue
-          Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep 8
           # 2. With the password, then a voice call: the customer is asked to accept the call.
-          $p2 = Start-Process pwsh -PassThru -WorkingDirectory src/matix/web -ArgumentList '-NoProfile','-Command',"$common; `$env:PASSWORD='$pw'; `$env:VOICE='1'; npx tsx scripts/smoke.ts *> ..\..\..\smoke-voice.log"
+          $env:PASSWORD = $pw; $env:VOICE = '1'
+          $p2 = Start-Process node -PassThru -WindowStyle Hidden -WorkingDirectory $web -ArgumentList $tsx,'scripts/smoke.ts' -RedirectStandardOutput smoke-voice.log -RedirectStandardError smoke-voice.err
           Start-Sleep 25
           Shot 'accept-voice-call.png'
           Stop-Process -Id $p2.Id -Force -ErrorAction SilentlyContinue
-          Get-Content smoke-accept.log, smoke-voice.log -ErrorAction SilentlyContinue
+          foreach ($f in 'smoke-accept.log','smoke-accept.err','smoke-voice.log','smoke-voice.err') { Write-Host "--- $f"; Get-Content $f -ErrorAction SilentlyContinue }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-accept-prompts
