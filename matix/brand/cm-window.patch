@@ -1,0 +1,329 @@
+diff --git a/flutter/lib/consts.dart b/flutter/lib/consts.dart
+index ed14e34..8d908a7 100644
+--- a/flutter/lib/consts.dart
++++ b/flutter/lib/consts.dart
+@@ -353,8 +353,8 @@ extension StringExtension on String {
+   String get nonBreaking => replaceAll(' ', String.fromCharCode($nbsp));
+ }
+ 
+-const Size kConnectionManagerWindowSizeClosedChat = Size(300, 490);
+-const Size kConnectionManagerWindowSizeOpenChat = Size(700, 490);
++const Size kConnectionManagerWindowSizeClosedChat = Size(440, 640);
++const Size kConnectionManagerWindowSizeOpenChat = Size(840, 640);
+ // Tabbar transition duration, now we remove the duration
+ const Duration kTabTransitionDuration = Duration.zero;
+ const double kEmptyMarginTop = 50;
+diff --git a/flutter/lib/desktop/pages/server_page.dart b/flutter/lib/desktop/pages/server_page.dart
+index eeb51b6..139f708 100644
+--- a/flutter/lib/desktop/pages/server_page.dart
++++ b/flutter/lib/desktop/pages/server_page.dart
+@@ -371,7 +371,8 @@ Widget buildConnectionCard(Client client) {
+         client.type_() == ClientType.file ||
+                 client.type_() == ClientType.portForward ||
+                 client.type_() == ClientType.terminal ||
+-                client.disconnected
++                client.disconnected ||
++                true // MatixBridge: customers do not understand the permission icons
+             ? Offstage()
+             : _PrivilegeBoard(client: client),
+         Expanded(
+@@ -568,9 +569,15 @@ class _CmHeaderState extends State<_CmHeader>
+                       .toggleCMChatPage(MessageKey(client.peerId, client.id));
+                 }
+               }),
+-              icon: SvgPicture.asset(client.type_() == ClientType.file
+-                  ? 'assets/file_transfer.svg'
+-                  : 'assets/chat2.svg'),
++              icon: Text(
++                client.type_() == ClientType.file ? 'الملفات\nFiles' : 'محادثة\nChat',
++                textAlign: TextAlign.center,
++                style: TextStyle(
++                    color: Colors.white,
++                    fontSize: 13,
++                    fontWeight: FontWeight.bold),
++              ),
++              iconSize: 56,
+               splashRadius: kDesktopIconButtonSplashRadius,
+             ),
+           )
+@@ -949,12 +956,7 @@ class _CmControlPanel extends StatelessWidget {
+                         .toList(),
+                   );
+                 },
+-                    icon: Icon(
+-                      Icons.call_rounded,
+-                      color: Colors.white,
+-                      size: 14,
+-                    ),
+-                    text: "Audio input",
++                    text: "الميكروفون / Microphone",
+                     textColor: Colors.white),
+               ),
+               Expanded(
+@@ -962,12 +964,7 @@ class _CmControlPanel extends StatelessWidget {
+                   context,
+                   color: Colors.red,
+                   onClick: () => closeVoiceCall(),
+-                  icon: Icon(
+-                    Icons.call_end_rounded,
+-                    color: Colors.white,
+-                    size: 14,
+-                  ),
+-                  text: "Stop voice call",
++                  text: "إنهاء المكالمة / End call",
+                   textColor: Colors.white,
+                 ),
+               )
+@@ -976,34 +973,26 @@ class _CmControlPanel extends StatelessWidget {
+         ),
+         Offstage(
+           offstage: !client.incomingVoiceCall,
+-          child: Row(
++          child: Column(
+             children: [
+-              Expanded(
+-                child: buildButton(context,
+-                    color: MyTheme.accent,
+-                    onClick: () => handleVoiceCall(true),
+-                    icon: Icon(
+-                      Icons.call_rounded,
+-                      color: Colors.white,
+-                      size: 14,
+-                    ),
+-                    text: "Accept",
+-                    textColor: Colors.white),
+-              ),
+-              Expanded(
+-                child: buildButton(
+-                  context,
+-                  color: Colors.red,
+-                  onClick: () => handleVoiceCall(false),
+-                  icon: Icon(
+-                    Icons.phone_disabled_rounded,
+-                    color: Colors.white,
+-                    size: 14,
+-                  ),
+-                  text: "Dismiss",
++              matixPrompt(
++                  'الدعم الفني يتصل بك صوتياً', 'Matix support is calling you'),
++              buildButton(context,
++                  color: Colors.green[700],
++                  onClick: () => handleVoiceCall(true),
++                  text: "قبول المكالمة  /  Accept call",
+                   textColor: Colors.white,
+-                ),
+-              )
++                  height: 64,
++                  fontSize: 22),
++              buildButton(
++                context,
++                color: Colors.red,
++                onClick: () => handleVoiceCall(false),
++                text: "رفض  /  Decline",
++                textColor: Colors.white,
++                height: 40,
++                fontSize: 15,
++              ),
+             ],
+           ),
+         ),
+@@ -1040,13 +1029,10 @@ class _CmControlPanel extends StatelessWidget {
+               child: buildButton(context,
+                   color: Colors.redAccent,
+                   onClick: handleDisconnect,
+-                  text: 'Disconnect',
+-                  icon: Icon(
+-                    Icons.link_off_rounded,
+-                    color: Colors.white,
+-                    size: 14,
+-                  ),
+-                  textColor: Colors.white),
++                  text: 'قطع الاتصال  /  Disconnect',
++                  textColor: Colors.white,
++                  height: 40,
++                  fontSize: 15),
+             ),
+           ],
+         )
+@@ -1062,7 +1048,7 @@ class _CmControlPanel extends StatelessWidget {
+             child: buildButton(context,
+                 color: MyTheme.accent,
+                 onClick: handleClose,
+-                text: 'Close',
++                text: 'إغلاق  /  Close',
+                 textColor: Colors.white)),
+       ],
+     ).marginOnly(bottom: buttonBottomMargin);
+@@ -1081,8 +1067,12 @@ class _CmControlPanel extends StatelessWidget {
+     return Column(
+       mainAxisAlignment: MainAxisAlignment.end,
+       children: [
++        if (showAccept)
++          matixPrompt('فريق الدعم الفني في ماتكس يطلب الاتصال بجهازك',
++              'Matix support wants to connect to your computer'),
+         Offstage(
+-          offstage: !showElevation || !showAccept,
++          offstage: true, // MatixBridge: one clear Accept button only
++          // offstage: !showElevation || !showAccept,
+           child: buildButton(context, color: Colors.green[700], onClick: () {
+             handleAccept(context);
+             handleElevate(context);
+@@ -1106,13 +1096,15 @@ class _CmControlPanel extends StatelessWidget {
+                   children: [
+                     buildButton(
+                       context,
+-                      color: MyTheme.accent,
++                      color: Colors.green[700],
+                       onClick: () {
+                         handleAccept(context);
+                         windowManager.minimize();
+                       },
+-                      text: 'Accept',
++                      text: 'قبول  /  Accept',
+                       textColor: Colors.white,
++                      height: 72,
++                      fontSize: 26,
+                     ),
+                   ],
+                 ),
+@@ -1123,8 +1115,10 @@ class _CmControlPanel extends StatelessWidget {
+                 color: Colors.transparent,
+                 border: Border.all(color: Colors.grey),
+                 onClick: handleDisconnect,
+-                text: 'Cancel',
++                text: 'رفض  /  Decline',
+                 textColor: null,
++                height: 40,
++                fontSize: 15,
+               ),
+             ),
+           ],
+@@ -1141,27 +1135,34 @@ class _CmControlPanel extends StatelessWidget {
+       required String text,
+       required Color? textColor,
+       String? tooltip,
+-      GestureTapDownCallback? onTapDown}) {
++      GestureTapDownCallback? onTapDown,
++      double height = 28,
++      double? fontSize}) {
+     assert(!(onClick == null && onTapDown == null));
+     Widget textWidget;
+     if (icon != null) {
+       textWidget = Text(
+         translate(text),
+-        style: TextStyle(color: textColor),
++        style: TextStyle(color: textColor, fontSize: fontSize),
+         textAlign: TextAlign.center,
+       );
+     } else {
+       textWidget = Expanded(
+         child: Text(
+           translate(text),
+-          style: TextStyle(color: textColor),
++          style: TextStyle(
++              color: textColor,
++              fontSize: fontSize,
++              fontWeight: fontSize != null && fontSize > 18
++                  ? FontWeight.bold
++                  : null),
+           textAlign: TextAlign.center,
+         ),
+       );
+     }
+     final borderRadius = BorderRadius.circular(10.0);
+     final btn = Container(
+-      height: 28,
++      height: height,
+       decoration: BoxDecoration(
+           color: color, borderRadius: borderRadius, border: border),
+       child: InkWell(
+@@ -1464,3 +1465,19 @@ class __FileTransferLogPageState extends State<_FileTransferLogPage> {
+     );
+   }
+ }
++
++/// MatixBridge: the question the customer must answer, in Arabic and English, big enough to notice.
++Widget matixPrompt(String ar, String en) {
++  return Column(
++    children: [
++      Text(ar,
++          textAlign: TextAlign.center,
++          textDirection: TextDirection.rtl,
++          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
++      SizedBox(height: 6),
++      Text(en,
++          textAlign: TextAlign.center,
++          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
++    ],
++  ).marginOnly(bottom: 16, left: 8, right: 8);
++}
+diff --git a/flutter/lib/desktop/widgets/windows_cm_window_position.dart b/flutter/lib/desktop/widgets/windows_cm_window_position.dart
+index 52daf73..3676e53 100644
+--- a/flutter/lib/desktop/widgets/windows_cm_window_position.dart
++++ b/flutter/lib/desktop/widgets/windows_cm_window_position.dart
+@@ -11,7 +11,7 @@ Future<void> setWindowsCmWindowBounds(Size size) async {
+   }
+   final screen = window?.screen;
+   if (window == null || screen == null) {
+-    await windowManager.setSizeAlignment(size, Alignment.topRight);
++    await windowManager.setSizeAlignment(size, Alignment.center);
+     return;
+   }
+ 
+@@ -19,8 +19,10 @@ Future<void> setWindowsCmWindowBounds(Size size) async {
+   final scaledSize = size * window.scaleFactor;
+   await windowManager.setBounds(
+     Rect.fromLTWH(
+-      screen.visibleFrame.right - scaledSize.width,
+-      screen.visibleFrame.top,
++      screen.visibleFrame.left +
++          (screen.visibleFrame.width - scaledSize.width) / 2,
++      screen.visibleFrame.top +
++          (screen.visibleFrame.height - scaledSize.height) / 2,
+       scaledSize.width,
+       scaledSize.height,
+     ),
+diff --git a/flutter/lib/main.dart b/flutter/lib/main.dart
+index 09250a8..bf1fcf8 100644
+--- a/flutter/lib/main.dart
++++ b/flutter/lib/main.dart
+@@ -316,7 +316,7 @@ showCmWindow({bool isStartup = false}) async {
+     ]);
+     // ensure initial window size to be changed
+     await windowManager.setSizeAlignment(
+-        kConnectionManagerWindowSizeClosedChat, Alignment.topRight);
++        kConnectionManagerWindowSizeClosedChat, Alignment.center);
+     _isCmReadyToShow = true;
+   } else if (_isCmReadyToShow) {
+     if (await windowManager.getOpacity() != 1) {
+@@ -324,7 +324,7 @@ showCmWindow({bool isStartup = false}) async {
+       await windowManager.focus();
+       await windowManager.minimize(); //needed
+       await windowManager.setSizeAlignment(
+-          kConnectionManagerWindowSizeClosedChat, Alignment.topRight);
++          kConnectionManagerWindowSizeClosedChat, Alignment.center);
+       windowOnTop(null);
+     }
+   }
+diff --git a/flutter/lib/models/chat_model.dart b/flutter/lib/models/chat_model.dart
+index 9f2c789..2caf108 100644
+--- a/flutter/lib/models/chat_model.dart
++++ b/flutter/lib/models/chat_model.dart
+@@ -322,7 +322,7 @@ class ChatModel with ChangeNotifier {
+         await setWindowsCmWindowBounds(kConnectionManagerWindowSizeClosedChat);
+       } else {
+         await windowManager.setSizeAlignment(
+-            kConnectionManagerWindowSizeClosedChat, Alignment.topRight);
++            kConnectionManagerWindowSizeClosedChat, Alignment.center);
+       }
+     } else {
+       final currentSelectedTab =
+@@ -338,7 +338,7 @@ class ChatModel with ChangeNotifier {
+         await setWindowsCmWindowBounds(kConnectionManagerWindowSizeOpenChat);
+       } else {
+         await windowManager.setSizeAlignment(
+-            kConnectionManagerWindowSizeOpenChat, Alignment.topRight);
++            kConnectionManagerWindowSizeOpenChat, Alignment.center);
+       }
+       _isShowCMSidePage = !_isShowCMSidePage;
+       notifyListeners();
