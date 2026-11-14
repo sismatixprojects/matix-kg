@@ -8,6 +8,7 @@
 // (it cannot call the rest of the agents API).
 
 import type { Device } from "./addressbook";
+import { t } from "../i18n";
 
 export interface TeamAgent {
   id: number;
@@ -70,7 +71,7 @@ function persist() {
 export class TeamAuthError extends Error {}
 
 async function call<T>(method: string, path: string, body?: unknown, opts: { keepalive?: boolean } = {}): Promise<T> {
-  if (!state) throw new TeamAuthError("Not signed in");
+  if (!state) throw new TeamAuthError(t("Not signed in"));
   const r = await fetch(`${base}/api/v1/matixbridge${path}`, {
     method,
     headers: { Authorization: `Bearer ${state.token}`, ...(body ? { "Content-Type": "application/json" } : {}) },
@@ -81,9 +82,9 @@ async function call<T>(method: string, path: string, body?: unknown, opts: { kee
   if (r.status === 401) {
     state = null;
     persist();
-    throw new TeamAuthError(j.message || "Your sign-in has expired. Please sign in again.");
+    throw new TeamAuthError(j.message || t("Your sign-in has expired. Please sign in again."));
   }
-  if (!r.ok || j.success === false) throw new Error(j.message || `Request failed (${r.status})`);
+  if (!r.ok || j.success === false) throw new Error(j.message || t("Request failed ({status})", { status: r.status }));
   return j as T;
 }
 
@@ -150,7 +151,7 @@ export const team = {
       body: JSON.stringify({ code }),
     });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok || !j.token) throw new Error(j.message || "Sign-in failed");
+    if (!r.ok || !j.token) throw new Error(j.message || t("Sign-in failed"));
     state = { api: base, token: j.token, exp: Date.now() + (Number(j.expires_in) || 3600) * 1000, agent: j.agent, org: j.org };
     persist();
   },

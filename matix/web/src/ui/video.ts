@@ -1,5 +1,6 @@
 // Decodes RustDesk video with WebCodecs and paints it on a canvas.
 import type { CodecName, EncodedFrame } from "../core/session";
+import { t } from "../i18n";
 
 const CODEC_STRINGS: Record<CodecName, string[]> = {
   vp9: ["vp09.00.10.08", "vp9"],
@@ -26,7 +27,7 @@ export class VideoSink {
 
   constructor(readonly canvas: HTMLCanvasElement, private requestKeyFrame: () => void, private ack: () => void) {
     const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
-    if (!ctx) throw new Error("Canvas 2D is not available");
+    if (!ctx) throw new Error(t("Canvas 2D is not available"));
     this.ctx = ctx;
   }
 
@@ -89,7 +90,7 @@ export class VideoSink {
     }
     if (!chosen) {
       this.configuring = undefined;
-      this.onError?.(`This browser cannot decode ${codec.toUpperCase()} video. Use Chrome or Edge.`);
+      this.onError?.(t("This browser cannot decode {codec} video. Use Chrome or Edge.", { codec: codec.toUpperCase() }));
       return;
     }
     this.decoder = new VideoDecoder({

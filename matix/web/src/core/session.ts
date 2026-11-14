@@ -6,6 +6,7 @@ import { hbb as R } from "../proto/rendezvous.js";
 import { Channel, ChannelClosed } from "./channel";
 import * as crypto from "./crypto";
 import { decompress } from "./zstd";
+import { t } from "../i18n";
 
 export const PROTOCOL_VERSION = "1.5.3";
 
@@ -134,7 +135,7 @@ export class Session {
 
   private async rendezvous(): Promise<R.RelayResponse> {
     const ch = await Channel.open(this.server.idServer).catch((e: Error) => {
-      throw new SessionError(`Cannot reach the ID server (${e.message})`);
+      throw new SessionError(t("Cannot reach the ID server ({error})", { error: e.message }));
     });
     try {
       ch.send(
@@ -153,30 +154,30 @@ export class Session {
         const msg = R.RendezvousMessage.decode(await ch.next(30000));
         if (msg.punch_hole_response) {
           const r = msg.punch_hole_response;
-          if (r.other_failure) throw new SessionError(r.other_failure);
+          if (r.other_failure) throw new SessionError(t(r.other_failure));
           switch (r.failure) {
             case R.PunchHoleResponse.Failure.ID_NOT_EXIST:
-              throw new SessionError("This ID does not exist. Check the number the customer gave you.");
+              throw new SessionError(t("This ID does not exist. Check the number the customer gave you."));
             case R.PunchHoleResponse.Failure.OFFLINE:
-              throw new SessionError("The remote computer is offline.");
+              throw new SessionError(t("The remote computer is offline."));
             case R.PunchHoleResponse.Failure.LICENSE_MISMATCH:
-              throw new SessionError("Server key mismatch: the web client and the server are configured with different keys.");
+              throw new SessionError(t("Server key mismatch: the web client and the server are configured with different keys."));
             case R.PunchHoleResponse.Failure.LICENSE_OVERUSE:
-              throw new SessionError("Server key overuse.");
+              throw new SessionError(t("Server key overuse."));
           }
-          throw new SessionError("The ID server refused the connection.");
+          throw new SessionError(t("The ID server refused the connection."));
         }
         if (msg.relay_response) {
           const rr = msg.relay_response as R.RelayResponse;
           if (rr.refuse_reason) throw new SessionError(rr.refuse_reason);
-          if (!rr.uuid) throw new SessionError("The ID server returned no relay session.");
+          if (!rr.uuid) throw new SessionError(t("The ID server returned no relay session."));
           return rr;
         }
       }
     } catch (e) {
       if (e instanceof SessionError) throw e;
-      if (e instanceof ChannelClosed) throw new SessionError(`The ID server closed the connection (${e.message})`);
-      throw new SessionError(e instanceof Error && /Timed out/.test(e.message) ? "The remote computer did not answer. Is the MatixBridge app running?" : String(e));
+      if (e instanceof ChannelClosed) throw new SessionError(t("The ID server closed the connection ({error})", { error: e.message }));
+      throw new SessionError(e instanceof Error && /Timed out/.test(e.message) ? t("The remote computer did not answer. Is the MatixBridge app running?") : String(e));
     } finally {
       ch.close();
     }
@@ -185,7 +186,7 @@ export class Session {
   /** Fail-closed handshake: any verification failure aborts the session. */
   private async secure(ch: Channel, signedPk: Uint8Array | null | undefined, serverKey: Uint8Array) {
     if (!signedPk || !signedPk.length) {
-      throw new SessionError("The server did not vouch for the remote computer's key. Refusing an unencrypted session.");
+      throw new SessionError(t("The server did not vouch for the remote computer's key. Refusing an unencrypted session."));
     }
     let peerSignKey: Uint8Array;
     try {
@@ -193,17 +194,17 @@ export class Session {
       if (idpk.id !== this.peerId || idpk.pk.length !== 32) throw new Error("bad id/pk");
       peerSignKey = idpk.pk;
     } catch {
-      throw new SessionError("The server's signature on the remote computer's key is invalid (wrong server key?).");
+      throw new SessionError(t("The server's signature on the remote computer's key is invalid (wrong server key?)."));
     }
     const first = M.Message.decode(await ch.next());
-    if (!first.signed_id) throw new SessionError("Handshake failed: unexpected first message from the remote side.");
+    if (!first.signed_id) throw new SessionError(t("Handshake failed: unexpected first message from the remote side."));
     let theirs: R.IdPk;
     try {
       theirs = R.IdPk.decode(crypto.signOpen(first.signed_id.id || new Uint8Array(), peerSignKey));
     } catch {
-      throw new SessionError("Handshake failed: the remote computer's identity could not be verified.");
+      throw new SessionError(t("Handshake failed: the remote computer's identity could not be verified."));
     }
-    if (theirs.id !== this.peerId) throw new SessionError("Handshake failed: identity mismatch.");
+    if (theirs.id !== this.peerId) throw new SessionError(t("Handshake failed: identity mismatch."));
     const kx = crypto.keyExchange(theirs.pk, theirs.kx_version || 0);
     ch.send(
       M.Message.encode({
@@ -253,7 +254,7 @@ export class Session {
           this.peerInfo = r.peer_info as M.PeerInfo;
           this.loggedIn = true;
           if (!this.opts.fileTransfer && this.peerInfo.displays.length === 0) {
-            this.loginReject?.(new SessionError("The remote computer has no display."));
+            this.loginReject?.(new SessionError(t("The remote computer has no display.")));
             return;
           }
           // An installed Windows peer with several sessions (RDP) waits for us to pick one

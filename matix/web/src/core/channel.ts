@@ -1,5 +1,6 @@
 // A WebSocket carrying one protobuf per binary frame (how hbbs/hbbr speak to web clients).
 import type { Cipher } from "./crypto";
+import { t } from "../i18n";
 
 export class ChannelClosed extends Error {
   constructor(reason: string) {
@@ -31,12 +32,12 @@ export class Channel {
       try {
         ws = new WebSocket(url);
       } catch (e) {
-        reject(new Error(`Cannot open ${url}: ${String(e)}`));
+        reject(new Error(t("Cannot open {url}: {error}", { url, error: String(e) })));
         return;
       }
       const timer = setTimeout(() => {
         ws.close();
-        reject(new Error(`Timed out connecting to ${url}`));
+        reject(new Error(t("Timed out connecting to {url}", { url })));
       }, timeoutMs);
       ws.onopen = () => {
         clearTimeout(timer);
@@ -44,7 +45,7 @@ export class Channel {
       };
       ws.onerror = () => {
         clearTimeout(timer);
-        reject(new Error(`Failed to connect to ${url}`));
+        reject(new Error(t("Failed to connect to {url}", { url })));
       };
     });
   }
@@ -84,7 +85,7 @@ export class Channel {
       };
       const timer = setTimeout(() => {
         this.waiters = this.waiters.filter((w) => w !== waiter);
-        reject(new Error("Timed out waiting for the remote side"));
+        reject(new Error(t("Timed out waiting for the remote side")));
       }, timeoutMs);
       this.waiters.push(waiter);
     });
