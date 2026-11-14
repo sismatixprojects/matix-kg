@@ -61,6 +61,8 @@ export interface SessionEvents {
   elevation: (error: string) => void;
   /** The customer's foreground window needs admin rights we don't have. */
   needsElevation: () => void;
+  /** Our voice call request was answered, or the customer hung up. */
+  voiceCall: (state: "accepted" | "refused" | "ended") => void;
   closed: (reason: string) => void;
 }
 
@@ -80,6 +82,7 @@ export class Session {
   private hash: M.IHash | undefined;
   private saltedPassword: Uint8Array | undefined;
   private loggedIn = false;
+  private voiceTs = 0;
   private closedFlag = false;
   private readonly sessionId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
 
@@ -318,6 +321,16 @@ export class Session {
       case "misc":
         this.onMisc(msg.misc!);
         break;
+      case "voice_call_response": {
+        const r = msg.voice_call_response!;
+        if (!this.voiceTs || Number(r.req_timestamp || 0) !== this.voiceTs) break;
+        this.voiceTs = 0;
+        this.emit("voiceCall", r.accepted ? "accepted" : "refused");
+        break;
+      }
+      case "voice_call_request":
+        if (!msg.voice_call_request?.is_connect) this.emit("voiceCall", "ended");
+        break;
     }
   }
 
@@ -435,6 +448,26 @@ export class Session {
   setAudio(on: boolean) {
     const v = on ? M.OptionMessage.BoolOption.No : M.OptionMessage.BoolOption.Yes;
     this.send({ misc: { option: { disable_audio: v } } });
+  }
+
+  /** Asks the customer for a voice call; they accept or decline on their screen. */
+  requestVoiceCall() {
+    this.voiceTs = Date.now();
+    this.send({ voice_call_request: { req_timestamp: this.voiceTs, is_connect: true } });
+  }
+
+  endVoiceCall() {
+    this.voiceTs = 0;
+    this.send({ voice_call_request: { req_timestamp: Date.now(), is_connect: false } });
+  }
+
+  /** The agent's microphone during a call: the format once, then Opus packets. */
+  sendAudioFormat(sampleRate: number, channels: number) {
+    this.send({ misc: { audio_format: { sample_rate: sampleRate, channels } } });
+  }
+
+  sendAudio(data: Uint8Array) {
+    this.send({ audio_frame: { data } });
   }
 
   /** Asks the customer's Windows to run MatixBridge with admin rights (UAC prompt on their side). */

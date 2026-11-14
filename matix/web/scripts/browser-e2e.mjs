@@ -41,7 +41,7 @@ const waitFor = async (pred, ms, what) => {
   throw new Error(`Timed out waiting for ${what}`);
 };
 
-const browser = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
+const browser = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 page.on("console", (m) => console.log(`page[${m.type()}]: ${m.text()}`));
 page.on("pageerror", (e) => console.log(`page error: ${e.message}`));
@@ -124,6 +124,16 @@ try {
   console.log("whole remote screen fits a short window:", JSON.stringify(fit));
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.waitForTimeout(300);
+
+  // Voice call: the button asks for the (fake) microphone and rings the customer; clicking again
+  // cancels. CI's peer has no one to answer, so this checks the request side and that the session lives on.
+  await page.click(".tb.call");
+  await page.waitForFunction(() => document.querySelector(".tb.call")?.classList.contains("on") && /Calling/.test(document.querySelector(".tb.call")?.textContent || ""), null, { timeout: 10000 });
+  await page.waitForTimeout(1500);
+  await page.click(".tb.call");
+  await page.waitForFunction(() => !document.querySelector(".tb.call")?.classList.contains("on") && /Voice call/.test(document.querySelector(".tb.call")?.textContent || ""), null, { timeout: 5000 });
+  if (!(await page.$("canvas"))) throw new Error("The session ended after a voice call request");
+  console.log("voice call: rang and was cancelled; session still open");
 
   // Keyboard + mouse: click into the remote xterm and type a command that fills the screen.
   const box = await page.locator("canvas").boundingBox();
