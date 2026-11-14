@@ -111,6 +111,20 @@ try {
   console.log("video on canvas:", JSON.stringify(before));
   await page.screenshot({ path: `${shots}/e2e-video.png` });
 
+  // The whole remote screen stays visible in a short window (the bottom used to be cut off).
+  await page.setViewportSize({ width: 1280, height: 480 });
+  await page.waitForTimeout(300);
+  const fit = await page.evaluate(() => {
+    const c = document.querySelector("canvas").getBoundingClientRect();
+    const s = document.querySelector(".stage").getBoundingClientRect();
+    return { canvas: [c.left, c.top, c.right, c.bottom].map(Math.round), stage: [s.left, s.top, s.right, s.bottom].map(Math.round) };
+  });
+  const [cl, ct, cr, cb] = fit.canvas, [sl, st, sr, sb] = fit.stage;
+  if (cl < sl - 1 || ct < st - 1 || cr > sr + 1 || cb > sb + 1) throw new Error(`The remote screen does not fit the window: ${JSON.stringify(fit)}`);
+  console.log("whole remote screen fits a short window:", JSON.stringify(fit));
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(300);
+
   // Keyboard + mouse: click into the remote xterm and type a command that fills the screen.
   const box = await page.locator("canvas").boundingBox();
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
