@@ -25,9 +25,12 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           path: src
+          submodules: true
           sparse-checkout: |
             matix/brand
             matix/web
+            libs/base/protos
+            libs/hbb_common
       - name: Install the MSI and check the result
         env:
           GH_TOKEN: ${{ github.token }}
@@ -109,6 +112,8 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
           Push-Location src/matix/web
           npm ci --no-audit --no-fund | Out-Null
+          npm run proto
+          if ($LASTEXITCODE) { throw "protocol code generation failed" }
           Pop-Location
           Invoke-WebRequest "https://github.com/rustdesk/rustdesk-server/releases/download/$env:SERVER_VERSION/rustdesk-server-windows-x86_64-unsigned.zip" -OutFile server.zip
           Expand-Archive server.zip -DestinationPath server
