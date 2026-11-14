@@ -301,7 +301,10 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const bRefresh = tb("refresh", t("Refresh"), t("Refresh the picture"));
   const bType = tb("type", t("Type text"), t("Type a text on the remote computer"));
   const bClip = tb("clip", t("Send clipboard"), t("Send your clipboard text to the remote computer"));
-  const bFit = tb("fit", t("Fit"), t("Switch between fit-to-window and actual size"));
+  // View, as in AnyDesk: the whole remote screen scaled to the window (default), or its original size with scrolling.
+  const viewSel = h("select", { title: t("View") });
+  for (const [v, l] of [["fit", "Whole screen"], ["actual", "Original size"]]) viewSel.append(h("option", { value: v }, t(l)));
+  const bView = h("label", { class: "tb", title: t("View") }, icon("fit"), viewSel);
   const bChat = tb("chat", t("Chat"));
   const chatBadge = h("span", { class: "badge hidden" }, "1");
   bChat.append(chatBadge);
@@ -310,13 +313,13 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   bRec.classList.add("rec");
   const bFull = tb("full", t("Full screen"));
   const bClose = tb("close", t("Disconnect"));
-  for (const b of [bCad, bLock, bRefresh, bType, bClip, bFit, bFull]) b.classList.add("compact");
+  for (const b of [bCad, bLock, bRefresh, bType, bClip, bFull]) b.classList.add("compact");
   const bMore = h("button", { class: "tb", title: t("More controls") }, h("span", {}, t("More ▾")));
   const moreMenu = h("div", { class: "tb-menu hidden" });
   const moreWrap = h("div", { class: "tb-menu-wrap" }, bMore, moreMenu);
   bClose.classList.add("danger");
 
-  const toolbar = h("div", { class: "toolbar" }, h("div", { class: "tb-brand", title: "MatixBridge by Matix" }, h("img", { src: "./favicon.svg", alt: "MatixBridge" })), title, bDisplay, bQuality, bCad, bLock, bRefresh, bType, bClip, bFit, moreWrap, h("div", { class: "spacer" }), bChat, bFiles, bRec, bFull, bClose);
+  const toolbar = h("div", { class: "toolbar" }, h("div", { class: "tb-brand", title: "MatixBridge by Matix" }, h("img", { src: "./favicon.svg", alt: "MatixBridge" })), title, bDisplay, bQuality, bView, bCad, bLock, bRefresh, bType, bClip, moreWrap, h("div", { class: "spacer" }), bChat, bFiles, bRec, bFull, bClose);
   const root = h("div", { class: "session" }, toolbar, h("div", { class: "body" }, stage, drawerHost));
   app.append(root);
   statusBox(overlay, t("Connecting…"));
@@ -490,9 +493,12 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   bClose.onclick = () => session.close("Disconnected");
   qualitySel.onchange = () => session.setQuality(qualitySel.value as "best" | "balanced" | "low");
   displaySel.onchange = () => session.switchDisplay(Number(displaySel.value));
-  bFit.onclick = () => {
-    stage.classList.toggle("actual");
-    bFit.classList.toggle("on", stage.classList.contains("actual"));
+  viewSel.value = store.get("view") === "actual" ? "actual" : "fit";
+  stage.classList.toggle("actual", viewSel.value === "actual");
+  viewSel.onchange = () => {
+    stage.classList.toggle("actual", viewSel.value === "actual");
+    store.set("view", viewSel.value);
+    canvas.focus();
   };
   bType.onclick = () => {
     const t = window.prompt(tr("Text to type on the remote computer:"));
